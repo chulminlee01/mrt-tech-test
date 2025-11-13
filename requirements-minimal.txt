@@ -1,0 +1,21 @@
+# Minimal requirements for Railway deployment
+# Use this if full requirements.txt fails
+
+# Core
+python-dotenv==1.0.1
+requests==2.31.0
+
+# Web framework (minimal)
+flask==3.1.2
+gunicorn==23.0.0
+
+# LLM (minimal - just OpenAI client)
+openai==1.54.0
+
+# Data
+pandas==2.2.2
+Faker==25.3.0
+
+# Google API
+google-api-python-client==2.143.0
+

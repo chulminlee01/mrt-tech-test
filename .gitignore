@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Generated outputs
+research_report.txt
+generated_questions.txt
+assignments.json
+assignments.md
+assignments.raw.json
+assignments.*.json
+index.html
+index.raw.txt
+styles.css
+design_notes.md
+
+# Generated directories
+datasets/
+starter_code/
+bulk_output/
+bulk_output_test/
+scratch/
+output/
+
+# Archives
+*.zip
+*.tar.gz
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
