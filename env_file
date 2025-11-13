@@ -1,0 +1,47 @@
+# =============================================================================
+# API Keys (Required)
+# =============================================================================
+
+# NVIDIA API Key (Primary - for minimax-m2 model)
+NVIDIA_API_KEY=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
+
+# OpenRouter API Key (Fallback)
+OPENROUTER_API_KEY=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
+
+# Google Custom Search API (For research agent)
+GOOGLE_API_KEY=AIzaSyCiSivvk-WNz33lntQRp8XVFas_acP2n8U
+GOOGLE_CSE_ID=c2df9ceeedce6477d
+
+# Primary model (NVIDIA minimax-m2)
+DEFAULT_MODEL=minimaxai/minimax-m2
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1   
+
+# Fallback model (DeepSeek with thinking)
+FALLBACK_MODEL=deepseek-ai/deepseek-v3.1-terminus
+FALLBACK_BASE_URL=https://openrouter.ai/api/v1
+DEEPSEEK_THINKING=True
+
+# Final fallback (OpenRouter free model)
+OPENROUTER_FALLBACK_MODEL=z-ai/glm-4.5-air:free
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1   
+
+# =============================================================================
+# LLM Parameters
+# =============================================================================
+
+OPENAI_TEMPERATURE=0.7
+OPENAI_MODEL=minimaxai/minimax-m2
+
+# =============================================================================
+# OpenRouter Attribution
+# =============================================================================
+
+OPENROUTER_SITE_URL=https://myrealtrip.com
+OPENROUTER_APP_NAME=MRT Assignment Generator
+
+# =============================================================================
+# Agent Behavior
+# =============================================================================
+
+RECENT_MONTHS=6
+AGENT_MAX_ITERATIONS=8
