@@ -359,7 +359,8 @@ if __name__ == "__main__":
     print("=" * 70)
     print(f"📍 Server: http://0.0.0.0:{port}")
     print("🎨 Using Myrealtrip branding")
-    print("🤖 Powered by NVIDIA minimax-m2 & CrewAI")
+    print("🤖 Powered by CrewAI")
+    print("💡 Supports: OpenAI, NVIDIA, OpenRouter")
     print("=" * 70)
     if port == 8080:
         print("⚠️  Note: Using port 8080 (port 5000 is used by macOS AirPlay)")

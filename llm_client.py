@@ -44,8 +44,9 @@ def create_llm_client(
     
     Fallback order:
     1. NVIDIA minimax-m2 (if NVIDIA_API_KEY is set)
-    2. DeepSeek v3.1-terminus via OpenRouter (with thinking)
-    3. OpenRouter fallback model
+    2. OpenAI GPT (if OPENAI_API_KEY is set)
+    3. DeepSeek v3.1-terminus via OpenRouter (with thinking)
+    4. OpenRouter fallback model
     
     Args:
         model: Optional model override
@@ -71,9 +72,18 @@ def create_llm_client(
             return _create_nvidia_client(temp_val, **kwargs)
         except Exception as e:
             print(f"⚠️  NVIDIA client failed: {e}")
-            print("   Falling back to DeepSeek...")
+            print("   Falling back to OpenAI...")
     
-    # Try DeepSeek with thinking (fallback #1)
+    # Try OpenAI (fallback #1)
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        try:
+            return _create_openai_client(temp_val, **kwargs)
+        except Exception as e:
+            print(f"⚠️  OpenAI client failed: {e}")
+            print("   Falling back to OpenRouter...")
+    
+    # Try DeepSeek with thinking (fallback #2)
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     if openrouter_key:
         try:
@@ -82,7 +92,7 @@ def create_llm_client(
             print(f"⚠️  DeepSeek client failed: {e}")
             print("   Falling back to OpenRouter...")
         
-        # Try OpenRouter fallback model (fallback #2)
+        # Try OpenRouter fallback model (fallback #3)
         try:
             return _create_openrouter_fallback_client(temp_val, **kwargs)
         except Exception as e:
@@ -90,7 +100,7 @@ def create_llm_client(
     
     # No valid keys found
     raise LLMClientError(
-        "No valid API keys found. Please set one of: NVIDIA_API_KEY, OPENROUTER_API_KEY in .env"
+        "No valid API keys found. Please set one of: OPENAI_API_KEY, NVIDIA_API_KEY, or OPENROUTER_API_KEY"
     )
 
 
@@ -113,6 +123,24 @@ def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
         openai_api_base=base_url,
         openai_api_key=api_key,
         default_headers=_get_nvidia_headers(),
+        **kwargs
+    )
+
+
+def _create_openai_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
+    """Create standard OpenAI client."""
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not api_key:
+        raise LLMClientError("OPENAI_API_KEY not found")
+    
+    print(f"✨ Using OpenAI {model}")
+    
+    return ChatOpenAI(
+        model=model,
+        temperature=temperature,
+        api_key=api_key,
         **kwargs
     )
 
@@ -178,6 +206,17 @@ def _create_with_explicit_model(model: str, temperature: float, **kwargs: Any) -
         base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
         api_key = os.getenv("NVIDIA_API_KEY")
         headers = _get_nvidia_headers()
+    elif "gpt" in model.lower() or "o1" in model.lower():
+        # Use OpenAI
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise LLMClientError(f"OPENAI_API_KEY required for model: {model}")
+        return ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            api_key=api_key,
+            **kwargs
+        )
     elif "deepseek" in model.lower():
         # Use OpenRouter with thinking
         base_url = os.getenv("FALLBACK_BASE_URL", "https://openrouter.ai/api/v1")
