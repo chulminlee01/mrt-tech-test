@@ -10,12 +10,15 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      # LLM API Keys (choose at least one)
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
+      # Primary LLM API Key - NVIDIA (Recommended)
       - key: NVIDIA_API_KEY
+        sync: false
+      - key: DEFAULT_MODEL
+        value: minimaxai/minimax-m2
+      - key: NVIDIA_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      # Optional: Additional LLM providers (fallback)
+      - key: OPENAI_API_KEY
         sync: false
       - key: OPENROUTER_API_KEY
         sync: false
@@ -24,11 +27,6 @@ services:
         sync: false
       - key: GOOGLE_CSE_ID
         sync: false
-      # Optional: OpenRouter attribution
-      - key: OPENROUTER_SITE_URL
-        value: https://myrealtrip.com
-      - key: OPENROUTER_APP_NAME
-        value: MRT Tech Test Generator
       # Temperature setting
       - key: OPENAI_TEMPERATURE
         value: 0.7
