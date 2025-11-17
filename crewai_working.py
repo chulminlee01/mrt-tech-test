@@ -166,18 +166,20 @@ def run_working_crewai(
         print("✅ Creating ChatOpenAI instance directly for CrewAI compatibility")
         
         # Enable thinking for DeepSeek
-        model_kwargs = {}
+        llm_params = {
+            "model": nvidia_model,
+            "temperature": 0.7
+        }
+        
         if "deepseek" in nvidia_model.lower():
-            model_kwargs["extra_body"] = {
-                "chat_template_kwargs": {"thinking": True}
+            llm_params["model_kwargs"] = {
+                "extra_body": {
+                    "chat_template_kwargs": {"thinking": True}
+                }
             }
             print("   DeepSeek Thinking: ENABLED ✓")
         
-        llm = ChatOpenAI(
-            model=nvidia_model,
-            temperature=0.7,
-            model_kwargs=model_kwargs if model_kwargs else None
-        )
+        llm = ChatOpenAI(**llm_params)
         print("✅ LLM client ready for CrewAI agents")
         print()
         
