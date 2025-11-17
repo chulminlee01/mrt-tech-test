@@ -212,6 +212,25 @@ def index():
     return render_template("index.html", agents=AGENTS)
 
 
+@app.route("/api/version")
+def version():
+    """Get application version."""
+    version_str = "2.0.0-nvidia-support"
+    try:
+        with open("VERSION", "r") as f:
+            version_str = f.readline().strip()
+    except:
+        pass
+    
+    return jsonify({
+        "success": True,
+        "version": version_str,
+        "supports": ["NVIDIA", "OpenAI", "OpenRouter"],
+        "primary": "NVIDIA",
+        "message": "OpenRouter is optional, not required"
+    })
+
+
 @app.route("/api/agents")
 def get_agents():
     """Get list of agents."""
@@ -354,8 +373,17 @@ if __name__ == "__main__":
     # Use PORT environment variable for Railway/Heroku compatibility
     port = int(os.getenv("PORT", 8080))
     
+    # Read version
+    version = "2.0.0"
+    try:
+        with open("VERSION", "r") as f:
+            version = f.readline().strip()
+    except:
+        pass
+    
     print("=" * 70)
     print("🚀 Tech Test Generator Web App")
+    print(f"📦 Version: {version}")
     print("=" * 70)
     print(f"📍 Server: http://0.0.0.0:{port}")
     print("🎨 Using Myrealtrip branding")

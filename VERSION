@@ -1,0 +1,5 @@
+2.0.0-nvidia-support
+Fixed: Removed OpenRouter requirement
+Supports: NVIDIA (primary), OpenAI (fallback), OpenRouter (optional)
+Updated: 2025-11-17
+

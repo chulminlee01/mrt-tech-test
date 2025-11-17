@@ -26,6 +26,7 @@ RUN mkdir -p output
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 ENV PORT=8080
 
 # Expose port
