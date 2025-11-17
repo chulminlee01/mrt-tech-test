@@ -63,17 +63,21 @@ pip install -r requirements.txt
 # 4. Configure API keys
 cp .env.example .env
 # Edit .env and add your keys:
-#   OPENROUTER_API_KEY (required for CrewAI)
-#   GOOGLE_API_KEY (required for research)
-#   GOOGLE_CSE_ID (required for research)
-#   NVIDIA_API_KEY (optional, for better quality)
+#   NVIDIA_API_KEY (recommended - primary LLM)
+#   GOOGLE_API_KEY (optional - for research agent)
+#   GOOGLE_CSE_ID (optional - for research agent)
+#
+# Alternative LLM options (if not using NVIDIA):
+#   OPENAI_API_KEY (fallback option)
+#   OPENROUTER_API_KEY (fallback option)
 ```
 
 ### Get API Keys
 
-- **OpenRouter**: https://openrouter.ai/ (CrewAI-compatible)
-- **Google CSE**: https://programmablesearchengine.google.com/
-- **NVIDIA** (optional): https://build.nvidia.com/
+- **NVIDIA** (Recommended): https://build.nvidia.com/ - Free tier available
+- **OpenAI** (Alternative): https://platform.openai.com/api-keys
+- **OpenRouter** (Alternative): https://openrouter.ai/
+- **Google CSE** (Optional): https://programmablesearchengine.google.com/
 
 ### Launch Web UI
 
