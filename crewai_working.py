@@ -147,50 +147,23 @@ def run_working_crewai(
     openai_key = os.getenv("OPENAI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     
-    # Configure for NVIDIA (bypass LiteLLM model parsing issues)
-    if nvidia_key and not openai_key:
-        nvidia_base = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-        nvidia_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
-        
-        print("🔧 Configuring NVIDIA API for CrewAI")
-        print(f"   Model: {nvidia_model}")
-        print(f"   Base URL: {nvidia_base}")
-        
-        # Set as OpenAI environment variables so CrewAI/LiteLLM routes correctly
-        # This is the CRITICAL step that makes NVIDIA work with CrewAI
-        os.environ["OPENAI_API_KEY"] = nvidia_key
-        os.environ["OPENAI_API_BASE"] = nvidia_base
-        
-        # IMPORTANT: Don't use create_llm_client here - create ChatOpenAI directly
-        # This bypasses our wrapper and LiteLLM's provider parsing
-        print("✅ Creating ChatOpenAI instance directly for CrewAI compatibility")
-        
-        # Enable thinking for DeepSeek
-        llm_params = {
-            "model": nvidia_model,
-            "temperature": 0.7
-        }
-        
-        if "deepseek" in nvidia_model.lower():
-            llm_params["model_kwargs"] = {
-                "extra_body": {
-                    "chat_template_kwargs": {"thinking": True}
-                }
-            }
-            print("   DeepSeek Thinking: ENABLED ✓")
-        
-        llm = ChatOpenAI(**llm_params)
-        print("✅ LLM client ready for CrewAI agents")
+    # Use NVIDIA if available (bypass all LiteLLM complexity)
+    if nvidia_key:
+        print("🔧 Using NVIDIA API with DeepSeek v3.1 Terminus")
+        from llm_client import create_nvidia_llm_direct
+        llm = create_nvidia_llm_direct(temperature=0.7)
         print()
         
     elif openai_key:
         print("🔧 Using OpenAI API")
         llm = create_llm_client(temperature=0.7)
         print()
+        
     elif openrouter_key:
         print("🔧 Using OpenRouter API")
         llm = create_llm_client(temperature=0.7)
         print()
+        
     else:
         print("❌ Error: No LLM API key found")
         print()

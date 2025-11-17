@@ -1,5 +1,6 @@
-2.0.0-nvidia-support
-Fixed: Removed OpenRouter requirement
-Supports: NVIDIA (primary), OpenAI (fallback), OpenRouter (optional)
-Updated: 2025-11-17
+2.1.0-deepseek-direct
+Fixed: Direct NVIDIA DeepSeek v3.1 with thinking
+Bypasses: LiteLLM provider parsing completely
+Model: deepseek-ai/deepseek-v3.1-terminus
+Updated: 2025-11-17 08:50 UTC
 

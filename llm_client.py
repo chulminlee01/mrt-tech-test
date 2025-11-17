@@ -2,9 +2,9 @@
 LLM Client with multi-provider fallback support.
 
 Tries providers in order:
-1. NVIDIA (minimax-m2)
-2. OpenRouter DeepSeek (with thinking)
-3. OpenRouter fallback model
+1. NVIDIA (DeepSeek v3.1 with thinking)
+2. OpenAI
+3. OpenRouter
 """
 
 import os
@@ -15,6 +15,42 @@ from langchain_openai import ChatOpenAI
 class LLMClientError(Exception):
     """Custom exception for LLM client errors."""
     pass
+
+
+def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
+    """
+    Create NVIDIA LLM directly without going through any wrapper.
+    This bypasses LiteLLM completely to avoid provider parsing errors.
+    
+    Uses: deepseek-ai/deepseek-v3.1-terminus with thinking enabled
+    """
+    nvidia_key = os.getenv("NVIDIA_API_KEY")
+    if not nvidia_key:
+        raise LLMClientError("NVIDIA_API_KEY not found")
+    
+    # Force DeepSeek model regardless of DEFAULT_MODEL setting
+    nvidia_model = "deepseek-ai/deepseek-v3.1-terminus"
+    nvidia_base = "https://integrate.api.nvidia.com/v1"
+    
+    print(f"🚀 Creating NVIDIA LLM directly (bypassing LiteLLM)")
+    print(f"   Model: {nvidia_model}")
+    print(f"   Base URL: {nvidia_base}")
+    print(f"   Thinking: ENABLED ✓")
+    
+    # Set environment for OpenAI client library
+    os.environ["OPENAI_API_KEY"] = nvidia_key
+    os.environ["OPENAI_API_BASE"] = nvidia_base
+    
+    # Create with thinking enabled
+    return ChatOpenAI(
+        model=nvidia_model,
+        temperature=temperature,
+        model_kwargs={
+            "extra_body": {
+                "chat_template_kwargs": {"thinking": True}
+            }
+        }
+    )
 
 
 def _get_nvidia_headers() -> Dict[str, str]:
