@@ -32,18 +32,26 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     nvidia_model = "deepseek-ai/deepseek-v3.1-terminus"
     nvidia_base = "https://integrate.api.nvidia.com/v1"
     
-    print(f"🚀 Creating NVIDIA LLM directly (bypassing LiteLLM)")
+    print(f"🚀 Creating NVIDIA LLM directly")
     print(f"   Model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
     print(f"   Thinking: ENABLED ✓")
     
-    # Set environment for OpenAI client library
+    # Set environment for both OpenAI client library AND LiteLLM
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Create with thinking enabled (extra_body must be passed directly, not in model_kwargs)
+    # For LiteLLM: Use "openai/" prefix to indicate OpenAI-compatible custom endpoint
+    # LiteLLM format: openai/<model_name> tells it to use OpenAI with custom base_url
+    litellm_model = f"openai/{nvidia_model}"
+    
+    print(f"   LiteLLM model format: {litellm_model}")
+    print(f"   This tells LiteLLM: Use OpenAI client with custom base_url")
+    
+    # Create with thinking enabled
+    # The openai/ prefix tells LiteLLM to route via OpenAI client to our base_url
     return ChatOpenAI(
-        model=nvidia_model,
+        model=litellm_model,
         temperature=temperature,
         extra_body={
             "chat_template_kwargs": {"thinking": True}
