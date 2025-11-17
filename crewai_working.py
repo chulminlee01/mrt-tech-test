@@ -538,7 +538,7 @@ def generate_with_crewai(
         )
     
     print("🧠 Using Full CrewAI Collaboration Pipeline")
-    return run_working_crewai(
+    return _run_crewai_classic(
         job_role=job_role,
         job_level=job_level,
         language=language,
