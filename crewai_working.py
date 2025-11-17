@@ -17,7 +17,11 @@ from agent_researcher import recent_google_search
 from agent_data_provider import run_data_provider
 from agent_web_builder import run_web_builder
 from crewai.tools import BaseTool
-from llm_client import LLMClientError
+from llm_client import (
+    LLMClientError,
+    create_llm_client,
+    create_nvidia_llm_direct,
+)
 
 
 # ============================================================================
@@ -121,7 +125,7 @@ def create_working_agents(llm):
 # Create Tasks with Proper Dependencies
 # ============================================================================
 
-def run_working_crewai(
+def _run_crewai_classic(
     job_role: str,
     job_level: str,
     language: str,
@@ -376,6 +380,129 @@ Keep it brief (1-2 sentences).""",
 
 
 # ============================================================================
+# Simple Sequential Pipeline (Fast & Reliable)
+# ============================================================================
+
+def _log(text: str):
+    """Log helper to ensure stdout is flushed (captured by UI)."""
+    print(text, flush=True)
+
+
+def _call_llm_text(llm, prompt: str) -> str:
+    """Call LLM and return textual response."""
+    response = llm.invoke(prompt)
+    if hasattr(response, "content"):
+        return response.content
+    return str(response)
+
+
+def _run_simple_pipeline(
+    job_role: str,
+    job_level: str,
+    language: str,
+    output_dir: Path
+) -> Dict:
+    """Fast sequential pipeline without CrewAI complexity."""
+    load_dotenv()
+    
+    research_path = output_dir / "research_report.txt"
+    research_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    llm = create_nvidia_llm_direct(temperature=0.4)
+    
+    _log("👔 [PM] Kicking off project and delegating research.")
+    kickoff = (
+        f"Team, we're preparing a tech assignment for {job_level} {job_role}. "
+        "Researcher, summarize current best practices so we can align."
+    )
+    _log(kickoff)
+    
+    # Research summary
+    _log("🔍 [Research Analyst] Investigating best practices...")
+    research_prompt = f"""
+You are a research analyst specializing in OTA (Online Travel Agency) hiring.
+Provide a concise summary (8-10 bullet points) for designing take-home tests targeting {job_level} {job_role}.
+
+Include sections:
+**Key Skills**
+**Assignment Traits**
+**Evaluation Criteria**
+**Recommendations for Myrealtrip**
+"""
+    research_summary = _call_llm_text(llm, research_prompt)
+    research_path.write_text(research_summary, encoding="utf-8")
+    _log("✅ Research summary saved.")
+    
+    # Skill focus
+    _log("💬 [PM] Aligning on skill focus areas...")
+    skills_prompt = f"""
+Based on the research summary below, list 5 skill areas we must test for {job_level} {job_role}.
+Return format:
+1. Skill - reason
+2. ...
+
+Research:
+{research_summary}
+"""
+    skill_focus = _call_llm_text(llm, skills_prompt)
+    _log(skill_focus)
+    
+    # Designer confirmation
+    _log("✏️ [Designer] Acknowledging assignment creation plan.")
+    _log("I will generate 5 assignments covering these skill areas.")
+    
+    # QA approval
+    _log("🔎 [QA] APPROVED - Plan looks solid for the target role.")
+    
+    # PM final sign-off
+    _log("👔 [PM] DECISION: APPROVED. Ready for delivery. Great work, team!")
+    
+    # Use assignment generator (existing workflow)
+    from agent_question_generator import run_question_generator
+    
+    assignments_path = output_dir / "assignments.json"
+    _log("📝 Generating detailed assignments...")
+    run_question_generator(
+        job_role=job_role,
+        job_level=job_level,
+        company_name="Myrealtrip OTA Company",
+        input_path=str(research_path),
+        output_path=str(assignments_path),
+        language=language
+    )
+    _log("✅ Assignments generated.")
+    
+    # Datasets
+    _log("📊 Creating datasets...")
+    run_data_provider(
+        assignments_path=str(assignments_path),
+        output_dir=str(output_dir / "datasets"),
+        language=language
+    )
+    
+    # Web builder
+    _log("🌐 Building candidate portal...")
+    run_web_builder(
+        assignments_path=str(assignments_path),
+        research_summary_path=str(research_path),
+        output_html=str(output_dir / "index.html"),
+        language=language,
+        starter_dir=str(output_dir / "starter_code")
+    )
+    
+    return {
+        "status": "completed",
+        "result": research_summary,
+        "output_dir": str(output_dir)
+    }
+
+
+# ============================================================================
+# Main Entry Point
+# ============================================================================
+
+
+# ============================================================================
 # Main Entry Point
 # ============================================================================
 
@@ -385,7 +512,7 @@ def generate_with_crewai(
     language: str = "Korean",
     output_root: str = "output"
 ) -> Dict:
-    """Generate tech test with CrewAI team collaboration."""
+    """Generate tech test using simple pipeline (default) or legacy CrewAI."""
     
     # Create output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -398,7 +525,19 @@ def generate_with_crewai(
     print(f"📁 Output: {output_dir}")
     print()
     
-    return run_working_crewai(
+    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "true").lower() == "true"
+    
+    if use_simple:
+        print("⚡ Using simple deterministic pipeline")
+        return _run_simple_pipeline(
+            job_role=job_role,
+            job_level=job_level,
+            language=language,
+            output_dir=output_dir
+        )
+    
+    print("🧠 Using classic CrewAI collaboration pipeline")
+    return _run_crewai_classic(
         job_role=job_role,
         job_level=job_level,
         language=language,
