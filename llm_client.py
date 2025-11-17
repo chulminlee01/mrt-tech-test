@@ -72,7 +72,27 @@ def create_llm_client(
             return _create_nvidia_client(temp_val, **kwargs)
         except Exception as e:
             print(f"⚠️  NVIDIA client failed: {e}")
-            print("   Falling back to OpenAI...")
+            print(f"   Error type: {type(e).__name__}")
+            
+            # If NVIDIA model not accessible, try known good models
+            fallback_models = [
+                "meta/llama-3.1-8b-instruct",
+                "google/gemma-2-9b-it",
+                "mistralai/mistral-7b-instruct-v0.3"
+            ]
+            
+            current_model = os.getenv("DEFAULT_MODEL", "")
+            for fallback_model in fallback_models:
+                if fallback_model != current_model:
+                    print(f"   Trying fallback NVIDIA model: {fallback_model}")
+                    try:
+                        os.environ["DEFAULT_MODEL"] = fallback_model
+                        return _create_nvidia_client(temp_val, **kwargs)
+                    except Exception as fallback_err:
+                        print(f"   Fallback {fallback_model} also failed: {fallback_err}")
+                        continue
+            
+            print("   All NVIDIA models failed, falling back to OpenAI...")
     
     # Try OpenAI (fallback #1)
     openai_key = os.getenv("OPENAI_API_KEY")
