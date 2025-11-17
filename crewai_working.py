@@ -129,6 +129,14 @@ def run_working_crewai(
     print("🎯 CrewAI Team-Based Generation")
     print("=" * 70)
     
+    # If using NVIDIA, set up environment for LiteLLM compatibility
+    nvidia_key = os.getenv("NVIDIA_API_KEY")
+    if nvidia_key:
+        # Tell LiteLLM/CrewAI to treat this as OpenAI-compatible
+        os.environ["OPENAI_API_KEY"] = nvidia_key
+        os.environ["OPENAI_API_BASE"] = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+        print("🔧 Configured NVIDIA as OpenAI-compatible endpoint for CrewAI")
+    
     try:
         llm = create_llm_client(temperature=0.7)
         print()

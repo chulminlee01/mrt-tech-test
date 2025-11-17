@@ -106,7 +106,8 @@ def create_llm_client(
 
 def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
     """Create NVIDIA client for minimax-m2."""
-    # For CrewAI compatibility, use OpenAI format since NVIDIA API is OpenAI-compatible
+    # For CrewAI/LiteLLM compatibility, use openai/ prefix with base_url
+    # This tells LiteLLM to treat it as an OpenAI-compatible endpoint
     model = os.getenv("DEFAULT_MODEL", "minimaxai/minimax-m2")
     base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     api_key = os.getenv("NVIDIA_API_KEY")
@@ -114,14 +115,15 @@ def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
     if not api_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
     
-    print(f"✨ Using NVIDIA {model}")
+    print(f"✨ Using NVIDIA {model} via OpenAI-compatible API")
     
-    # Use openai_api_base and openai_api_key for CrewAI/LiteLLM compatibility
+    # Use base_url and api_key (new format for LangChain/LiteLLM)
+    # Prepend "openai/" to tell LiteLLM to use OpenAI-compatible format
     return ChatOpenAI(
         model=model,
         temperature=temperature,
-        openai_api_base=base_url,
-        openai_api_key=api_key,
+        base_url=base_url,
+        api_key=api_key,
         default_headers=_get_nvidia_headers(),
         **kwargs
     )
