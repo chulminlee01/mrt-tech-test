@@ -118,11 +118,26 @@ def run_generation(job_id, job_role, job_level, language):
     """Run the orchestrator in a background thread."""
     global generation_status
     
+    print(f"[GENERATION] Thread started for job_id={job_id}", flush=True)
+    print(f"[GENERATION] Current generation_status keys: {list(generation_status.keys())}", flush=True)
+    
     try:
-        # Update status to running (already initialized in /api/generate)
-        if job_id in generation_status:
-            generation_status[job_id]["status"] = "running"
-            generation_status[job_id]["progress"] = "Initializing agents..."
+        # Ensure status exists (defensive - should be initialized already)
+        if job_id not in generation_status:
+            print(f"[GENERATION] WARNING: job_id {job_id} not in status, initializing now", flush=True)
+            generation_status[job_id] = {
+                "status": "running",
+                "progress": "Starting...",
+                "output_dir": None,
+                "error": None,
+                "logs": [],
+                "started_at": datetime.now().isoformat()
+            }
+        
+        # Update status to running
+        generation_status[job_id]["status"] = "running"
+        generation_status[job_id]["progress"] = "Initializing agents..."
+        print(f"[GENERATION] Status updated to running for job_id={job_id}", flush=True)
         
         # Capture stdout and stderr
         log_capture = LogCapture(job_id)
@@ -350,7 +365,8 @@ def generate():
         # Generate unique job ID
         job_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{abs(hash(job_role + job_level)) % 10000}"
         
-        print(f"[API] Starting generation for job_id={job_id}", flush=True)
+        print(f"[API] Generated job_id={job_id}", flush=True)
+        print(f"[API] Before initialization - generation_status keys: {list(generation_status.keys())}", flush=True)
         
         # Initialize status immediately (before thread starts)
         generation_status[job_id] = {
@@ -359,8 +375,13 @@ def generate():
             "output_dir": None,
             "error": None,
             "logs": [],
+            "agent_status": {},
+            "active_agent": None,
             "started_at": datetime.now().isoformat()
         }
+        
+        print(f"[API] After initialization - generation_status keys: {list(generation_status.keys())}", flush=True)
+        print(f"[API] Status for {job_id}: {generation_status[job_id]}", flush=True)
         
         # Start generation in background thread
         thread = threading.Thread(
@@ -372,6 +393,7 @@ def generate():
         thread.start()
         
         print(f"[API] Thread started successfully for job_id={job_id}", flush=True)
+        print(f"[API] Thread is alive: {thread.is_alive()}", flush=True)
         
         return jsonify({
             "success": True,
@@ -392,32 +414,50 @@ def generate():
 @app.route("/api/status/<job_id>")
 def status(job_id):
     """Get generation status."""
+    print(f"[API] Status check for job_id: {job_id}", flush=True)
+    print(f"[API] Current generation_status keys: {list(generation_status.keys())}", flush=True)
+    
     if job_id not in generation_status:
         print(f"[API] Status check failed - job_id not found: {job_id}", flush=True)
-        print(f"[API] Available job_ids: {list(generation_status.keys())}", flush=True)
+        
+        # Return a pending status instead of 404 to avoid frontend errors
         return jsonify({
-            "success": False,
-            "error": "Job not found",
-            "job_id": job_id,
-            "available_jobs": list(generation_status.keys())
-        }), 404
+            "success": True,
+            "status": {
+                "status": "initializing",
+                "progress": "Starting background process...",
+                "logs": [],
+                "started_at": datetime.now().isoformat()
+            }
+        })
+    
+    status_data = generation_status[job_id]
+    print(f"[API] Returning status: {status_data.get('status')} - {status_data.get('progress')}", flush=True)
     
     return jsonify({
         "success": True,
-        "status": generation_status[job_id]
+        "status": status_data
     })
 
 
 @app.route("/api/logs/<job_id>")
 def get_logs(job_id):
     """Get generation logs."""
+    print(f"[API] Logs request for job_id: {job_id}", flush=True)
+    
     if job_id not in generation_status:
+        print(f"[API] Logs - job_id not found: {job_id}", flush=True)
+        # Return empty logs instead of 404 to avoid frontend errors
         return jsonify({
-            "success": False,
-            "error": "Job not found"
-        }), 404
+            "success": True,
+            "logs": [],
+            "count": 0,
+            "message": "Job initializing or not found"
+        })
     
     logs = generation_status[job_id].get('logs', [])
+    print(f"[API] Returning {len(logs)} log lines for job_id={job_id}", flush=True)
+    
     return jsonify({
         "success": True,
         "logs": logs,
