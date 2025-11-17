@@ -69,44 +69,40 @@ def create_working_agents(llm):
     
     pm = Agent(
         role="Product Manager",
-        goal="Lead the team to create high-quality tech assignments",
-        backstory="""You are the PM at Myrealtrip. You coordinate the team, make decisions, 
-        and ensure quality. You delegate tasks and lead discussions. Be concise and direct.""",
+        goal="Delegate tasks quickly",
+        backstory="""You are a PM. You say short messages to delegate work. Never analyze or think, just delegate.""",
         verbose=True,
-        allow_delegation=True,
+        allow_delegation=False,
         llm=llm,
-        max_iter=3  # Limit iterations to prevent hanging
+        max_iter=1  # Force single iteration
     )
     
     researcher = Agent(
         role="Research Analyst", 
-        goal="Research industry best practices for tech assignments",
-        backstory="""You are a research expert. Provide concise, actionable insights based on 
-        your knowledge of {job_level} {job_role} best practices. Be brief and direct.""",
+        goal="List skills quickly",
+        backstory="""You list technical skills. Be extremely brief. Just list items, no analysis.""",
         verbose=True,
         llm=llm,
-        tools=[GoogleCSETool()],
-        max_iter=3  # Limit iterations
+        tools=[],  # Remove tool to speed up
+        max_iter=1  # Force single iteration
     )
     
     designer = Agent(
         role="Assignment Designer",
-        goal="Create 5 unique coding assignments quickly",
-        backstory="""You design coding assignments efficiently. Create clear, structured assignments 
-        in JSON format without overthinking. Be direct and productive.""",
+        goal="Confirm quickly",
+        backstory="""You confirm tasks. One sentence only. No thinking.""",
         verbose=True,
         llm=llm,
-        max_iter=3  # Limit iterations
+        max_iter=1  # Force single iteration
     )
     
     reviewer = Agent(
         role="QA Reviewer",
-        goal="Review assignments efficiently",
-        backstory="""You review assignment quality quickly. Provide clear APPROVED or specific 
-        feedback. Be concise and decisive.""",
+        goal="Approve quickly",
+        backstory="""You approve work. Say APPROVED. No analysis.""",
         verbose=True,
         llm=llm,
-        max_iter=2  # Limit iterations
+        max_iter=1  # Force single iteration
     )
     
     tech_writer = Agent(
@@ -157,7 +153,7 @@ def _run_crewai_classic(
     if nvidia_key:
         print("🔧 Using NVIDIA API with DeepSeek v3.1 Terminus")
         from llm_client import create_nvidia_llm_direct
-        llm = create_nvidia_llm_direct(temperature=0.7)
+        llm = create_nvidia_llm_direct(temperature=0.3)  # Lower temp for faster, deterministic responses
         print()
         
     elif openai_key:
@@ -189,91 +185,74 @@ def _run_crewai_classic(
     print(f"   🔎 {reviewer.role}")
     print()
     
-    # Task 1: PM Initialization & Research Delegation
+    # Task 1: PM Initialization & Research Delegation  
     task1 = Task(
-        description=f"""You are the PM. Initialize the project to create tech assignments for {job_level} {job_role} at Myrealtrip OTA company.
+        description=f"""Say exactly: "Team, let's create {job_level} {job_role} assignments. Researcher, investigate best practices."
 
-Say: "Team, we're creating tech assignments for {job_level} {job_role}. Researcher, please investigate {job_role} coding assignments and best practices."
-
-Keep it brief (2-3 sentences). Just confirm the project kickoff and delegate to the researcher.""",
-        expected_output="Brief PM kickoff message (2-3 sentences) confirming project start and delegating to researcher",
-        agent=pm
+Write exactly 2 sentences. No thinking, no analysis, just the message above.""",
+        expected_output="Exactly 2 sentences: project announcement and delegation to researcher",
+        agent=pm,
+        async_execution=False
     )
     
     # Task 2: Research Execution
     task2 = Task(
-        description=f"""You are the Research Analyst. Research best practices for {job_level} {job_role} coding assignments.
+        description=f"""List 5 key skills for {job_level} {job_role}:
+1. [Skill 1]
+2. [Skill 2]  
+3. [Skill 3]
+4. [Skill 4]
+5. [Skill 5]
 
-Based on your knowledge and optionally the google_cse_search tool (if available), provide:
-
-**Key Skills for {job_level} {job_role}:**
-- List 5-7 technical skills
-
-**Assignment Characteristics:**
-- Typical scope and complexity
-
-**Recommendations:**
-- 3-5 specific recommendations
-
-Keep it concise (10-15 lines total). Focus on actionable insights.""",
-        expected_output=f"Concise research summary (10-15 lines) with key skills, characteristics, and recommendations for {job_level} {job_role}",
+Write exactly 5 lines. No explanation.""",
+        expected_output=f"List of exactly 5 key skills for {job_level} {job_role}, one per line",
         agent=researcher,
-        context=[task1]
+        context=[task1],
+        async_execution=False
     )
     
     # Task 3: Team Discussion (PM leads)
     task3 = Task(
-        description=f"""You are the PM. Based on the research, decide on 5 skill areas to test for {job_level} {job_role}.
+        description=f"""Say exactly: "Designer, create 5 assignments for these skills."
 
-List the 5 skill areas clearly:
-1. [Skill area 1]
-2. [Skill area 2]
-3. [Skill area 3]
-4. [Skill area 4]
-5. [Skill area 5]
-
-Then say: "Assignment Designer, create 5 assignments covering these areas."
-
-Keep it brief (under 10 lines).""",
-        expected_output="List of 5 specific skill areas to test, followed by delegation to designer",
+Write exactly 1 sentence. No thinking.""",
+        expected_output="Exactly 1 sentence delegating to designer",
         agent=pm,
-        context=[task2]
+        context=[task2],
+        async_execution=False
     )
     
     # Task 4: Assignment Creation (based on discussion)
     task4 = Task(
-        description=f"""Create 5 coding assignments for {job_level} {job_role} based on the research.
+        description=f"""Say exactly: "I will create assignments."
 
-Simply confirm: "I will create 5 assignments covering the recommended skills."
-
-The actual assignments will be generated by a specialized tool after this.""",
-        expected_output="Brief confirmation that assignments will be created (1 sentence)",
+Write exactly 1 sentence. No thinking.""",
+        expected_output="Exactly 1 sentence confirming assignment creation",
         agent=designer,
-        context=[task3]
+        context=[task3],
+        async_execution=False
     )
     
     # Task 5: Quality Review
     task5 = Task(
-        description=f"""You are the QA Reviewer. The plan looks good for {job_level} {job_role} assignments.
+        description=f"""Say exactly: "APPROVED"
 
-Simply say: "APPROVED - The planned assignments are appropriate for {job_level} {job_role}."
-
-Be brief (1-2 sentences).""",
-        expected_output="Brief approval message (1-2 sentences)",
+Write exactly 1 word. No explanation.""",
+        expected_output="The word APPROVED",
         agent=reviewer,
-        context=[task4]
+        context=[task4],
+        async_execution=False
     )
     
     # Task 6: PM Final Decision
     task6 = Task(
-        description=f"""You are the PM. Provide final approval.
+        description=f"""Say exactly: "DECISION: APPROVED"
 
-Say: "DECISION: APPROVED. Ready for delivery. Team, excellent work!"
-
-Keep it brief (1-2 sentences).""",
-        expected_output="Final approval message (1-2 sentences)",
+Write exactly 2 words. No thinking.""",
+        expected_output="Exactly: DECISION: APPROVED",
         agent=pm,
-        context=[task5]
+        context=[task5],
+        async_execution=False
     )
     
     # Create crew (4 agents: PM, Researcher, Designer, Reviewer)
