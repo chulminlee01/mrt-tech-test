@@ -122,27 +122,24 @@ def run_working_crewai(
     CURRENT_RESEARCH_PATH = str(output_dir / "research_report.txt")
     CURRENT_ASSIGNMENTS_PATH = str(output_dir / "assignments.json")
     
-    # Configure LLM (use OpenRouter for CrewAI compatibility)
-    openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    if not openrouter_key:
-        raise ValueError("OPENROUTER_API_KEY required for CrewAI")
-    
-    os.environ["OPENAI_API_KEY"] = openrouter_key
-    os.environ["OPENAI_API_BASE"] = "https://openrouter.ai/api/v1"
+    # Configure LLM using our flexible client (supports NVIDIA, OpenAI, OpenRouter)
+    from llm_client import create_llm_client
     
     print("=" * 70)
     print("🎯 CrewAI Team-Based Generation")
     print("=" * 70)
-    print(f"✨ Using OpenRouter (CrewAI-compatible)")
-    print(f"   Model: openrouter/deepseek/deepseek-chat")
-    print()
     
-    llm = ChatOpenAI(
-        model="openrouter/deepseek/deepseek-chat",
-        temperature=0.7,
-        base_url="https://openrouter.ai/api/v1",
-        api_key=openrouter_key
-    )
+    try:
+        llm = create_llm_client(temperature=0.7)
+        print()
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        print()
+        print("Please set one of these environment variables:")
+        print("  - NVIDIA_API_KEY (recommended)")
+        print("  - OPENAI_API_KEY")
+        print("  - OPENROUTER_API_KEY")
+        raise
     
     # Create agents (Technical Writer optional - not needed for core workflow)
     pm, researcher, designer, reviewer, tech_writer = create_working_agents(llm)

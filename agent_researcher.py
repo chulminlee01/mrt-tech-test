@@ -167,13 +167,15 @@ def run_researcher(
     load_dotenv()
 
     # Validate required environment variables early for clearer errors
-    # Check for at least one LLM API key (NVIDIA or OpenRouter)
+    # Check for at least one LLM API key (NVIDIA, OpenAI, or OpenRouter)
     nvidia_key = os.getenv("NVIDIA_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    if not nvidia_key and not openrouter_key:
+    if not nvidia_key and not openai_key and not openrouter_key:
         raise RuntimeError(
-            "Missing required LLM API key. Set either NVIDIA_API_KEY or OPENROUTER_API_KEY in your .env file.\n"
-            "- NVIDIA: Get at https://build.nvidia.com/\n"
+            "Missing required LLM API key. Set one of: NVIDIA_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY in your .env file.\n"
+            "- NVIDIA (recommended): Get at https://build.nvidia.com/\n"
+            "- OpenAI: Get at https://platform.openai.com/api-keys\n"
             "- OpenRouter: Get at https://openrouter.ai/"
         )
     _require_env("GOOGLE_API_KEY")
