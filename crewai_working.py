@@ -525,7 +525,8 @@ def generate_with_crewai(
     print(f"📁 Output: {output_dir}")
     print()
     
-    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "true").lower() == "true"
+    # Use CrewAI by default (user requested)
+    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "false").lower() == "true"
     
     if use_simple:
         print("⚡ Using simple deterministic pipeline")
@@ -536,8 +537,8 @@ def generate_with_crewai(
             output_dir=output_dir
         )
     
-    print("🧠 Using classic CrewAI collaboration pipeline")
-    return _run_crewai_classic(
+    print("🧠 Using Full CrewAI Collaboration Pipeline")
+    return run_working_crewai(
         job_role=job_role,
         job_level=job_level,
         language=language,
