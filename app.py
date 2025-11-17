@@ -209,7 +209,28 @@ def run_generation(job_id, job_role, job_level, language):
 @app.route("/")
 def index():
     """Serve the main page."""
-    return render_template("index.html", agents=AGENTS)
+    try:
+        return render_template("index.html", agents=AGENTS)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"ERROR in index route: {e}", flush=True)
+        print(f"Traceback: {error_details}", flush=True)
+        return jsonify({
+            "error": "Internal Server Error",
+            "message": str(e),
+            "details": error_details
+        }), 500
+
+
+@app.route("/health")
+def health():
+    """Health check endpoint."""
+    return jsonify({
+        "status": "healthy",
+        "version": "2.0.0-nvidia-support",
+        "agents_count": len(AGENTS)
+    })
 
 
 @app.route("/api/version")
