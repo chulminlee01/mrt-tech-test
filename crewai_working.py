@@ -17,6 +17,7 @@ from agent_researcher import recent_google_search
 from agent_data_provider import run_data_provider
 from agent_web_builder import run_web_builder
 from crewai.tools import BaseTool
+from llm_client import LLMClientError
 
 
 # ============================================================================
@@ -146,28 +147,56 @@ def run_working_crewai(
     openai_key = os.getenv("OPENAI_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     
-    if nvidia_key:
-        print("🔧 Using NVIDIA API")
+    # Configure for NVIDIA (bypass LiteLLM model parsing issues)
+    if nvidia_key and not openai_key:
         nvidia_base = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-        nvidia_model = os.getenv("DEFAULT_MODEL", "minimaxai/minimax-m2")
+        nvidia_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
+        
+        print("🔧 Configuring NVIDIA API for CrewAI")
         print(f"   Model: {nvidia_model}")
         print(f"   Base URL: {nvidia_base}")
+        
+        # Set as OpenAI environment variables so CrewAI/LiteLLM routes correctly
+        # This is the CRITICAL step that makes NVIDIA work with CrewAI
+        os.environ["OPENAI_API_KEY"] = nvidia_key
+        os.environ["OPENAI_API_BASE"] = nvidia_base
+        
+        # IMPORTANT: Don't use create_llm_client here - create ChatOpenAI directly
+        # This bypasses our wrapper and LiteLLM's provider parsing
+        print("✅ Creating ChatOpenAI instance directly for CrewAI compatibility")
+        
+        # Enable thinking for DeepSeek
+        model_kwargs = {}
+        if "deepseek" in nvidia_model.lower():
+            model_kwargs["extra_body"] = {
+                "chat_template_kwargs": {"thinking": True}
+            }
+            print("   DeepSeek Thinking: ENABLED ✓")
+        
+        llm = ChatOpenAI(
+            model=nvidia_model,
+            temperature=0.7,
+            model_kwargs=model_kwargs if model_kwargs else None
+        )
+        print("✅ LLM client ready for CrewAI agents")
+        print()
+        
     elif openai_key:
         print("🔧 Using OpenAI API")
-    elif openrouter_key:
-        print("🔧 Using OpenRouter API")
-    
-    try:
         llm = create_llm_client(temperature=0.7)
         print()
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    elif openrouter_key:
+        print("🔧 Using OpenRouter API")
+        llm = create_llm_client(temperature=0.7)
+        print()
+    else:
+        print("❌ Error: No LLM API key found")
         print()
         print("Please set one of these environment variables:")
         print("  - NVIDIA_API_KEY (recommended)")
         print("  - OPENAI_API_KEY")
         print("  - OPENROUTER_API_KEY")
-        raise
+        raise LLMClientError("No LLM API key configured")
     
     # Create agents (Technical Writer optional - not needed for core workflow)
     pm, researcher, designer, reviewer, tech_writer = create_working_agents(llm)
