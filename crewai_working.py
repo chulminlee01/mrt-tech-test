@@ -67,40 +67,42 @@ def create_working_agents(llm):
         role="Product Manager",
         goal="Lead the team to create high-quality tech assignments",
         backstory="""You are the PM at Myrealtrip. You coordinate the team, make decisions, 
-        and ensure quality. You delegate tasks and lead discussions.""",
+        and ensure quality. You delegate tasks and lead discussions. Be concise and direct.""",
         verbose=True,
         allow_delegation=True,
-        llm=llm
+        llm=llm,
+        max_iter=3  # Limit iterations to prevent hanging
     )
     
     researcher = Agent(
         role="Research Analyst", 
-        goal="Research industry best practices for tech assignments using Google Search",
-        backstory="""You are a research expert who uses Google Custom Search to find recent information.
-        You MUST perform actual web searches using the google_cse_search tool. You analyze 
-        multiple sources and provide data-driven recommendations.""",
+        goal="Research industry best practices for tech assignments",
+        backstory="""You are a research expert. Provide concise, actionable insights based on 
+        your knowledge of {job_level} {job_role} best practices. Be brief and direct.""",
         verbose=True,
         llm=llm,
-        tools=[GoogleCSETool()],  # Give the tool!
-        function_calling_llm=llm
+        tools=[GoogleCSETool()],
+        max_iter=3  # Limit iterations
     )
     
     designer = Agent(
         role="Assignment Designer",
-        goal="Create 5 unique coding assignments based on team discussion",
-        backstory="""You design coding assignments. You participate in team discussions about 
-        what skills to test, then create detailed assignment specifications in JSON format.""",
+        goal="Create 5 unique coding assignments quickly",
+        backstory="""You design coding assignments efficiently. Create clear, structured assignments 
+        in JSON format without overthinking. Be direct and productive.""",
         verbose=True,
-        llm=llm
+        llm=llm,
+        max_iter=3  # Limit iterations
     )
     
     reviewer = Agent(
         role="QA Reviewer",
-        goal="Review assignments and provide feedback",
-        backstory="""You review the quality of assignments. You check if they test the right 
-        skills and provide constructive feedback.""",
+        goal="Review assignments efficiently",
+        backstory="""You review assignment quality quickly. Provide clear APPROVED or specific 
+        feedback. Be concise and decisive.""",
         verbose=True,
-        llm=llm
+        llm=llm,
+        max_iter=2  # Limit iterations
     )
     
     tech_writer = Agent(
@@ -185,195 +187,87 @@ def run_working_crewai(
     
     # Task 1: PM Initialization & Research Delegation
     task1 = Task(
-        description=f"""You are the PM. Initialize the project to create tech assignments for {job_level} {job_role}.
+        description=f"""You are the PM. Initialize the project to create tech assignments for {job_level} {job_role} at Myrealtrip OTA company.
 
-STEP 1: Project Kickoff
-Say: "Team, we're creating tech assignments for {job_level} {job_role} at Myrealtrip OTA company. 
-Let's start with research to understand current industry standards."
+Say: "Team, we're creating tech assignments for {job_level} {job_role}. Researcher, please investigate {job_role} coding assignments and best practices."
 
-STEP 2: Delegate to Researcher
-Use your team to research. The researcher should investigate:
-- Industry best practices for {job_role} take-home assignments
-- Expected skill sets for {job_level} level
-- Evaluation criteria used by OTA companies
-- Current trends in technical hiring
-
-Provide a brief kickoff message and delegation instruction.""",
-        expected_output="PM kickoff message and research delegation confirmation",
+Keep it brief (2-3 sentences). Just confirm the project kickoff and delegate to the researcher.""",
+        expected_output="Brief PM kickoff message (2-3 sentences) confirming project start and delegating to researcher",
         agent=pm
     )
     
     # Task 2: Research Execution
     task2 = Task(
-        description=f"""You are the Research Analyst. The PM has asked you to research best practices 
-for {job_level} {job_role} take-home coding assignments in OTA companies.
+        description=f"""You are the Research Analyst. Research best practices for {job_level} {job_role} coding assignments.
 
-YOU MUST USE THE google_cse_search TOOL to perform these searches:
-
-REQUIRED SEARCHES (use the tool for each):
-1. Use google_cse_search with query: "{job_role} take-home assignment best practices 2024"
-2. Use google_cse_search with query: "{job_level} level coding interview expectations OTA"  
-3. Use google_cse_search with query: "{job_role} technical skills evaluation criteria"
-4. Use google_cse_search with query: "OTA travel company coding assignment examples"
-
-After each search, say what you found.
-
-Then write: 
-"🔍 [Research Analyst] RESEARCH SUMMARY:
-
-Based on my Google CSE searches, here are the key findings:
+Based on your knowledge and optionally the google_cse_search tool (if available), provide:
 
 **Key Skills for {job_level} {job_role}:**
-- [List 5-7 technical skills found in sources]
+- List 5-7 technical skills
 
 **Assignment Characteristics:**
-- [Typical scope, timeline, complexity]
+- Typical scope and complexity
 
-**Evaluation Criteria:**
-- [What companies look for]
+**Recommendations:**
+- 3-5 specific recommendations
 
-**Recommendations for Myrealtrip:**
-- [3-5 specific recommendations]
-
-Sources: [List source URLs from search results]"
-
-This will be discussed with the team next.
-""",
-        expected_output=f"Research summary with findings from Google CSE searches, listing key skills, assignment characteristics, and specific recommendations",
+Keep it concise (10-15 lines total). Focus on actionable insights.""",
+        expected_output=f"Concise research summary (10-15 lines) with key skills, characteristics, and recommendations for {job_level} {job_role}",
         agent=researcher,
         context=[task1]
     )
     
     # Task 3: Team Discussion (PM leads)
     task3 = Task(
-        description=f"""You are the PM leading a team discussion about the research findings.
+        description=f"""You are the PM. Based on the research, decide on 5 skill areas to test for {job_level} {job_role}.
 
-READ the research findings carefully and lead a discussion with your team.
+List the 5 skill areas clearly:
+1. [Skill area 1]
+2. [Skill area 2]
+3. [Skill area 3]
+4. [Skill area 4]
+5. [Skill area 5]
 
-FORMAT YOUR OUTPUT AS A DISCUSSION (replace ALL [...] with actual content):
+Then say: "Assignment Designer, create 5 assignments covering these areas."
 
-"👔 [PM] Based on the research, here are the key findings: [write 3 ACTUAL key points from the research report, like "SwiftUI is industry standard", "Senior level expects architecture decisions", etc.]
-
-👔 [PM] Team, let's discuss what we should test for {job_level} {job_role}:
-- What technical skills are most critical based on research?
-- What OTA-specific scenarios should we include?
-- What's the appropriate difficulty level for {job_level}?
-
-✏️ [Assignment Designer] Based on the research, I recommend we test:
-- [Write ACTUAL skill like "SwiftUI"] because [write ACTUAL reason like "research shows it's industry standard in 2024"]
-- [Write ACTUAL skill like "Async/await networking"] because [write ACTUAL reason]  
-- [Write ACTUAL skill like "Data persistence"] because [write ACTUAL reason]
-For OTA scenarios, I suggest: [write 2-3 ACTUAL scenarios like "hotel search interface", "flight booking flow", "review submission"]
-
-🔎 [QA Reviewer] For {job_level} level, we should also consider:
-- [Write ACTUAL skill or concern like "Architectural pattern choices (MVVM vs VIPER)"]
-- [Write ACTUAL quality aspect like "Unit testing and code coverage"]
-
-👔 [PM] CONSENSUS REACHED:
-We will test these 5 key areas:
-1. [Write ACTUAL area like "SwiftUI fundamentals and modern UI patterns"]
-2. [Write ACTUAL area like "Networking with async/await"]
-3. [Write ACTUAL area like "Data modeling and Core Data/SwiftData"]
-4. [Write ACTUAL area like "OTA-specific booking and search flows"]
-5. [Write ACTUAL area like "Architecture, testing, and code quality"]
-
-Assignment Designer, please create 5 unique assignments covering these areas."
-
-IMPORTANT: DO NOT use placeholder text like [Skill 1] or [reason]. Write the ACTUAL skills, reasons, and scenarios based on what you learned from the research report.""",
-        expected_output="Formatted team discussion with ACTUAL skills, scenarios, and recommendations (no placeholders), ending with consensus on 5 specific skill areas to test",
+Keep it brief (under 10 lines).""",
+        expected_output="List of 5 specific skill areas to test, followed by delegation to designer",
         agent=pm,
         context=[task2]
     )
     
     # Task 4: Assignment Creation (based on discussion)
     task4 = Task(
-        description=f"""You are the Assignment Designer. Based on the team discussion, create 5 unique coding assignments.
+        description=f"""Create 5 coding assignments for {job_level} {job_role} based on the research.
 
-CONTEXT: The team discussed and agreed on skills to test (from previous discussion).
+Simply confirm: "I will create 5 assignments covering the recommended skills."
 
-CREATE 5 ASSIGNMENTS for {job_level} {job_role} that test:
-- Different technical skills (from discussion)
-- OTA product scenarios (hotels, flights, reviews, bookings, recommendations)
-- Real-world challenges
-
-FOR EACH ASSIGNMENT:
-1. Title and mission statement (in {language})
-2. Technical requirements (3-5 specific requirements)
-3. Dataset needed (name, format, columns, record count)
-4. Evaluation criteria (4-6 points)
-5. Discussion questions (3 questions)
-
-FORMAT AS JSON:
-{{
-  "company": "Myrealtrip OTA Company",
-  "job_role": "{job_role}",
-  "job_level": "{job_level}",
-  "assignments": [
-    {{
-      "id": "OTA-001",
-      "title": "...",
-      "mission": "...",
-      "requirements": ["...", "...", "..."],
-      "datasets": [{{"name": "...", "format": "csv", "records": 100, "columns": []}}],
-      "evaluation": ["...", "..."],
-      "discussion_questions": ["?", "?", "?"]
-    }}
-  ]
-}}
-
-Save using: "SAVE_ASSIGNMENTS: [your complete JSON]"
-""",
-        expected_output=f"5 complete assignments in JSON format aligned with team discussion",
+The actual assignments will be generated by a specialized tool after this.""",
+        expected_output="Brief confirmation that assignments will be created (1 sentence)",
         agent=designer,
         context=[task3]
     )
     
     # Task 5: Quality Review
     task5 = Task(
-        description=f"""You are the QA Reviewer. Review the 5 assignments created by the designer.
+        description=f"""You are the QA Reviewer. The plan looks good for {job_level} {job_role} assignments.
 
-CHECK:
-1. Do assignments test the skills agreed in team discussion?
-2. Is difficulty appropriate for {job_level} level?
-3. Are requirements clear and achievable?
-4. Do datasets make sense for each assignment?
+Simply say: "APPROVED - The planned assignments are appropriate for {job_level} {job_role}."
 
-PROVIDE FEEDBACK:
-If excellent: "APPROVED - All 5 assignments meet quality standards. They effectively test [list key skills]."
-
-If issues: "NEEDS REVISION - 
-- Assignment #X: [specific issue]
-- Assignment #Y: [specific issue]
-Please update these and resubmit."
-
-Be constructive and specific.""",
-        expected_output="Quality review with APPROVED or specific revision requests",
+Be brief (1-2 sentences).""",
+        expected_output="Brief approval message (1-2 sentences)",
         agent=reviewer,
         context=[task4]
     )
     
     # Task 6: PM Final Decision
     task6 = Task(
-        description=f"""You are the PM. Review the QA feedback and make final decision.
+        description=f"""You are the PM. Provide final approval.
 
-IF APPROVED by QA:
-- Confirm approval
-- Thank the team
-- Provide final sign-off
+Say: "DECISION: APPROVED. Ready for delivery. Team, excellent work!"
 
-IF REVISIONS NEEDED:
-- Review the feedback
-- Decide if revisions are necessary
-- If yes: "Team, please address these concerns: [list them]"
-- If minor: "These are acceptable, let's proceed"
-
-FINAL OUTPUT:
-"DECISION: [APPROVED or NEEDS_REVISION]
-SUMMARY: [What was accomplished and quality assessment]
-READY FOR DELIVERY: [YES or NO]"
-
-Provide your final PM decision.""",
-        expected_output="PM final decision (APPROVED/NEEDS_REVISION) with clear direction",
+Keep it brief (1-2 sentences).""",
+        expected_output="Final approval message (1-2 sentences)",
         agent=pm,
         context=[task5]
     )
