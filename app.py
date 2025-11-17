@@ -52,7 +52,48 @@ class LogCapture(io.StringIO):
                     if 'logs' not in generation_status[self.job_id]:
                         generation_status[self.job_id]['logs'] = []
                     generation_status[self.job_id]['logs'].append(cleaned_text)
+                    
+                    # Update progress based on log content
+                    self._update_progress_from_log(cleaned_text)
         return len(text)
+    
+    def _update_progress_from_log(self, text):
+        """Update progress status based on log content."""
+        if self.job_id not in generation_status:
+            return
+            
+        text_lower = text.lower()
+        
+        # Detect which phase we're in based on logs
+        if 'task 1' in text_lower or 'pm initialization' in text_lower:
+            generation_status[self.job_id]['progress'] = '👔 PM initializing project...'
+            generation_status[self.job_id]['active_agent'] = 'pm'
+        elif 'task 2' in text_lower or 'research' in text_lower and 'analyst' in text_lower:
+            generation_status[self.job_id]['progress'] = '🔍 Research Analyst investigating...'
+            generation_status[self.job_id]['active_agent'] = 'researcher'
+        elif 'task 3' in text_lower or 'discussion' in text_lower or 'consensus' in text_lower:
+            generation_status[self.job_id]['progress'] = '💬 Team discussion in progress...'
+            generation_status[self.job_id]['active_agent'] = 'pm'
+        elif 'task 4' in text_lower or 'assignment designer' in text_lower:
+            generation_status[self.job_id]['progress'] = '✏️ Designer creating assignments...'
+            generation_status[self.job_id]['active_agent'] = 'designer'
+        elif 'task 5' in text_lower or 'qa reviewer' in text_lower or 'reviewing' in text_lower:
+            generation_status[self.job_id]['progress'] = '🔎 QA reviewing assignments...'
+            generation_status[self.job_id]['active_agent'] = 'reviewer'
+        elif 'task 6' in text_lower or 'final decision' in text_lower or 'approved' in text_lower:
+            generation_status[self.job_id]['progress'] = '👔 PM final approval...'
+            generation_status[self.job_id]['active_agent'] = 'pm'
+        elif 'generating structured assignments' in text_lower:
+            generation_status[self.job_id]['progress'] = '📝 Generating detailed assignments...'
+        elif 'generating datasets' in text_lower:
+            generation_status[self.job_id]['progress'] = '📊 Creating datasets...'
+            generation_status[self.job_id]['active_agent'] = 'data'
+        elif 'building web portal' in text_lower:
+            generation_status[self.job_id]['progress'] = '🌐 Building web portal...'
+            generation_status[self.job_id]['active_agent'] = 'builder'
+        elif 'applying custom styling' in text_lower or 'web designer' in text_lower:
+            generation_status[self.job_id]['progress'] = '🎨 Applying custom styling...'
+            generation_status[self.job_id]['active_agent'] = 'styler'
     
     def flush(self):
         pass
