@@ -32,6 +32,6 @@ ENV PORT=8080
 # Expose port
 EXPOSE 8080
 
-# Run with gunicorn
-CMD gunicorn -w 2 -b 0.0.0.0:$PORT app:app --timeout 600 --access-logfile - --error-logfile -
+# Run with gunicorn (using shell form to expand $PORT)
+CMD ["sh", "-c", "gunicorn -w 2 -b 0.0.0.0:${PORT:-8080} app:app --timeout 600 --access-logfile - --error-logfile -"]
 
