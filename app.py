@@ -64,27 +64,31 @@ class LogCapture(io.StringIO):
             
         text_lower = text.lower()
         
+        # Update timestamp to show activity
+        generation_status[self.job_id]['last_update'] = datetime.now().isoformat()
+        
         # Detect which phase we're in based on logs
-        if 'task 1' in text_lower or 'pm initialization' in text_lower:
+        if 'task 1' in text_lower or ('agent started' in text_lower and 'product manager' in text_lower):
             generation_status[self.job_id]['progress'] = '👔 PM initializing project...'
             generation_status[self.job_id]['active_agent'] = 'pm'
-        elif 'task 2' in text_lower or 'research' in text_lower and 'analyst' in text_lower:
+        elif 'task 2' in text_lower or ('agent started' in text_lower and 'research' in text_lower):
             generation_status[self.job_id]['progress'] = '🔍 Research Analyst investigating...'
             generation_status[self.job_id]['active_agent'] = 'researcher'
         elif 'task 3' in text_lower or 'discussion' in text_lower or 'consensus' in text_lower:
             generation_status[self.job_id]['progress'] = '💬 Team discussion in progress...'
             generation_status[self.job_id]['active_agent'] = 'pm'
-        elif 'task 4' in text_lower or 'assignment designer' in text_lower:
+        elif 'task 4' in text_lower or ('agent started' in text_lower and 'designer' in text_lower):
             generation_status[self.job_id]['progress'] = '✏️ Designer creating assignments...'
             generation_status[self.job_id]['active_agent'] = 'designer'
-        elif 'task 5' in text_lower or 'qa reviewer' in text_lower or 'reviewing' in text_lower:
+        elif 'task 5' in text_lower or ('agent started' in text_lower and 'reviewer' in text_lower):
             generation_status[self.job_id]['progress'] = '🔎 QA reviewing assignments...'
             generation_status[self.job_id]['active_agent'] = 'reviewer'
-        elif 'task 6' in text_lower or 'final decision' in text_lower or 'approved' in text_lower:
+        elif 'task 6' in text_lower or 'final decision' in text_lower or 'decision: approved' in text_lower:
             generation_status[self.job_id]['progress'] = '👔 PM final approval...'
             generation_status[self.job_id]['active_agent'] = 'pm'
         elif 'generating structured assignments' in text_lower:
             generation_status[self.job_id]['progress'] = '📝 Generating detailed assignments...'
+            generation_status[self.job_id]['active_agent'] = 'designer'
         elif 'generating datasets' in text_lower:
             generation_status[self.job_id]['progress'] = '📊 Creating datasets...'
             generation_status[self.job_id]['active_agent'] = 'data'
@@ -204,15 +208,20 @@ def run_generation(job_id, job_role, job_level, language):
         generation_status[job_id]["active_agent"] = "pm"
         generation_status[job_id]["agent_status"] = {agent["id"]: "pending" for agent in AGENTS}
         generation_status[job_id]["agent_status"]["pm"] = "active"
+        generation_status[job_id]["last_update"] = datetime.now().isoformat()
         
         # Run CrewAI team collaboration
-        generation_status[job_id]["progress"] = "CrewAI team collaborating..."
+        generation_status[job_id]["progress"] = "🎯 Starting CrewAI team collaboration..."
+        generation_status[job_id]["last_update"] = datetime.now().isoformat()
+        
+        print(f"[GENERATION] Starting CrewAI for job_id={job_id}", flush=True)
         result = generate_with_crewai(
             job_role=job_role,
             job_level=job_level,
             language=language,
             output_root=str(job_dir)
         )
+        print(f"[GENERATION] CrewAI completed for job_id={job_id}", flush=True)
         
         # Post-processing: Generate starter code and styling
         assignments_path = Path(job_dir) / "assignments.json"
