@@ -76,6 +76,7 @@ def create_llm_client(
             
             # If NVIDIA model not accessible, try known good models
             fallback_models = [
+                "deepseek-ai/deepseek-v3.1-terminus",
                 "meta/llama-3.1-8b-instruct",
                 "google/gemma-2-9b-it",
                 "mistralai/mistral-7b-instruct-v0.3"
@@ -125,10 +126,9 @@ def create_llm_client(
 
 
 def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
-    """Create NVIDIA client for minimax-m2."""
+    """Create NVIDIA client with DeepSeek v3.1 terminus (thinking enabled)."""
     # NVIDIA uses OpenAI-compatible API
-    # Model can be: "minimaxai/minimax-m2" or any NVIDIA catalog model
-    nvidia_model = os.getenv("DEFAULT_MODEL", "meta/llama-3.1-8b-instruct")
+    nvidia_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
     base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     api_key = os.getenv("NVIDIA_API_KEY")
     
@@ -140,6 +140,14 @@ def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
     print(f"   Base URL: {base_url}")
     print(f"   API Key: {api_key[:10]}...{api_key[-4:] if len(api_key) > 10 else 'xxx'}")
     
+    # Enable thinking for DeepSeek models
+    model_kwargs = kwargs.pop("model_kwargs", {})
+    if "deepseek" in nvidia_model.lower():
+        model_kwargs["extra_body"] = {
+            "chat_template_kwargs": {"thinking": True}
+        }
+        print(f"   DeepSeek Thinking: ENABLED ✓")
+    
     # Create ChatOpenAI client directly with base_url
     # The OpenAI client will make requests to NVIDIA's OpenAI-compatible endpoint
     return ChatOpenAI(
@@ -147,6 +155,7 @@ def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
         temperature=temperature,
         base_url=base_url,
         api_key=api_key,
+        model_kwargs=model_kwargs,
         **kwargs
     )
 

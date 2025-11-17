@@ -20,17 +20,20 @@ This is NVIDIA's OpenAI-compatible endpoint.
 
 ### 3. DEFAULT_MODEL (Required)
 ```
-DEFAULT_MODEL=meta/llama-3.1-8b-instruct
+DEFAULT_MODEL=deepseek-ai/deepseek-v3.1-terminus
 ```
 
-**Available NVIDIA Models:**
-- `meta/llama-3.1-8b-instruct` (Recommended - Fast, reliable)
+**Recommended NVIDIA Models:**
+- `deepseek-ai/deepseek-v3.1-terminus` (Recommended - With Thinking ✨)
+- `meta/llama-3.1-8b-instruct` (Fast, reliable)
 - `meta/llama-3.1-70b-instruct` (More powerful)
 - `google/gemma-2-9b-it` (Alternative)
 - `mistralai/mistral-7b-instruct-v0.3` (Alternative)
 
-**Note:** Check your NVIDIA account at https://build.nvidia.com/ to see which models you have access to.
-Some models like `minimaxai/minimax-m2` may require special access or may not be available in all regions.
+**Note:** DeepSeek v3.1 terminus supports "thinking" mode which provides
+step-by-step reasoning for better quality outputs.
+
+Check your NVIDIA account at https://build.nvidia.com/ to see which models you have access to.
 
 ---
 

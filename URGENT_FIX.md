@@ -34,7 +34,7 @@ minimaxai/minimax-m2
 
 **To:**
 ```
-meta/llama-3.1-8b-instruct
+deepseek-ai/deepseek-v3.1-terminus
 ```
 
 7. **Click "Update"** or "Save"
@@ -43,11 +43,21 @@ meta/llama-3.1-8b-instruct
 
 ---
 
-## Alternative Models (if llama doesn't work)
+## Why DeepSeek v3.1 Terminus?
+
+- ✅ **Thinking Mode Enabled**: Provides step-by-step reasoning
+- ✅ **High Quality Output**: Better analysis and decision making  
+- ✅ **Widely Available**: Should work on most NVIDIA accounts
+- ✅ **Great for Tech Assignments**: Excels at technical content
+
+---
+
+## Alternative Models (if DeepSeek doesn't work)
 
 If you still get errors, try one of these models instead:
 
 ```
+meta/llama-3.1-8b-instruct
 google/gemma-2-9b-it
 mistralai/mistral-7b-instruct-v0.3
 meta/llama-3.1-70b-instruct
