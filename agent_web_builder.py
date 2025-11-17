@@ -151,10 +151,11 @@ def _render_assignments(assignments: List[Dict[str, Any]], html_dir: Path) -> st
         datasets_html = _render_datasets(assignment.get("datasets_resolved", []), html_dir)
         starter_html = _render_starter(assignment.get("starter_resolved", {}), html_dir)
 
+        active_attr = ' data-active="true"' if is_active else ''
         tab_buttons.append(
             f"<button type='button' class='assignments-tabs__tab{' is-active' if is_active else ''}' "
             f"id='{button_id}' role='tab' aria-controls='{tab_id}' aria-selected='{str(is_active).lower()}' "
-            f"data-tab-target='{tab_id}'{' data-active=\"true\"' if is_active else ''}>{title}</button>"
+            f"data-tab-target='{tab_id}'{active_attr}>{title}</button>"
         )
 
         panels.append(f"""
