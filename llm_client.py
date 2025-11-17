@@ -41,14 +41,12 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Create with thinking enabled
+    # Create with thinking enabled (extra_body must be passed directly, not in model_kwargs)
     return ChatOpenAI(
         model=nvidia_model,
         temperature=temperature,
-        model_kwargs={
-            "extra_body": {
-                "chat_template_kwargs": {"thinking": True}
-            }
+        extra_body={
+            "chat_template_kwargs": {"thinking": True}
         }
     )
 
