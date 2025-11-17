@@ -20,9 +20,17 @@ This is NVIDIA's OpenAI-compatible endpoint.
 
 ### 3. DEFAULT_MODEL (Required)
 ```
-DEFAULT_MODEL=minimaxai/minimax-m2
+DEFAULT_MODEL=meta/llama-3.1-8b-instruct
 ```
-This is the NVIDIA model to use.
+
+**Available NVIDIA Models:**
+- `meta/llama-3.1-8b-instruct` (Recommended - Fast, reliable)
+- `meta/llama-3.1-70b-instruct` (More powerful)
+- `google/gemma-2-9b-it` (Alternative)
+- `mistralai/mistral-7b-instruct-v0.3` (Alternative)
+
+**Note:** Check your NVIDIA account at https://build.nvidia.com/ to see which models you have access to.
+Some models like `minimaxai/minimax-m2` may require special access or may not be available in all regions.
 
 ---
 

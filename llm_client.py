@@ -107,31 +107,26 @@ def create_llm_client(
 def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
     """Create NVIDIA client for minimax-m2."""
     # NVIDIA uses OpenAI-compatible API
-    nvidia_model = os.getenv("DEFAULT_MODEL", "minimaxai/minimax-m2")
+    # Model can be: "minimaxai/minimax-m2" or any NVIDIA catalog model
+    nvidia_model = os.getenv("DEFAULT_MODEL", "meta/llama-3.1-8b-instruct")
     base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     api_key = os.getenv("NVIDIA_API_KEY")
     
     if not api_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
     
-    # Set environment variables for LiteLLM
-    os.environ["OPENAI_API_KEY"] = api_key
-    os.environ["OPENAI_API_BASE"] = base_url
+    print(f"✨ Using NVIDIA API")
+    print(f"   Model: {nvidia_model}")
+    print(f"   Base URL: {base_url}")
+    print(f"   API Key: {api_key[:10]}...{api_key[-4:] if len(api_key) > 10 else 'xxx'}")
     
-    print(f"✨ Using NVIDIA {nvidia_model} via OpenAI-compatible API")
-    print(f"   Endpoint: {base_url}")
-    
-    # Use "custom_openai/" prefix to tell LiteLLM this is a custom OpenAI endpoint
-    # This prevents LiteLLM from trying to parse the provider from the model name
-    litellm_model = f"custom_openai/{nvidia_model}"
-    
-    print(f"   LiteLLM model string: {litellm_model}")
-    
-    # Create ChatOpenAI with custom_openai prefix
+    # Create ChatOpenAI client directly with base_url
+    # The OpenAI client will make requests to NVIDIA's OpenAI-compatible endpoint
     return ChatOpenAI(
-        model=litellm_model,
+        model=nvidia_model,
         temperature=temperature,
-        default_headers=_get_nvidia_headers(),
+        base_url=base_url,
+        api_key=api_key,
         **kwargs
     )
 

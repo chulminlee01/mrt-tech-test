@@ -14,7 +14,7 @@ services:
       - key: NVIDIA_API_KEY
         sync: false
       - key: DEFAULT_MODEL
-        value: minimaxai/minimax-m2
+        value: meta/llama-3.1-8b-instruct
       - key: NVIDIA_BASE_URL
         value: https://integrate.api.nvidia.com/v1
       # Optional: Additional LLM providers (fallback)

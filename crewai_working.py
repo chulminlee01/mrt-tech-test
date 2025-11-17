@@ -141,19 +141,21 @@ def run_working_crewai(
     print("🎯 CrewAI Team-Based Generation")
     print("=" * 70)
     
-    # If using NVIDIA, set up environment for LiteLLM compatibility
+    # Check which LLM provider is configured
     nvidia_key = os.getenv("NVIDIA_API_KEY")
     openai_key = os.getenv("OPENAI_API_KEY")
+    openrouter_key = os.getenv("OPENROUTER_API_KEY")
     
-    if nvidia_key and not openai_key:
-        # Tell LiteLLM/CrewAI to treat this as OpenAI-compatible
-        os.environ["OPENAI_API_KEY"] = nvidia_key
-        os.environ["OPENAI_API_BASE"] = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-        # Override the model to use openai/ prefix for LiteLLM routing
-        os.environ["DEFAULT_MODEL"] = "minimaxai/minimax-m2"
-        print("🔧 Configured NVIDIA as OpenAI-compatible endpoint for CrewAI")
-        print(f"   Model: minimaxai/minimax-m2")
-        print(f"   Base URL: {os.environ['OPENAI_API_BASE']}")
+    if nvidia_key:
+        print("🔧 Using NVIDIA API")
+        nvidia_base = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+        nvidia_model = os.getenv("DEFAULT_MODEL", "minimaxai/minimax-m2")
+        print(f"   Model: {nvidia_model}")
+        print(f"   Base URL: {nvidia_base}")
+    elif openai_key:
+        print("🔧 Using OpenAI API")
+    elif openrouter_key:
+        print("🔧 Using OpenRouter API")
     
     try:
         llm = create_llm_client(temperature=0.7)
