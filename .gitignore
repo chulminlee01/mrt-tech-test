@@ -23,7 +23,9 @@ assignments.json
 assignments.md
 assignments.raw.json
 assignments.*.json
-index.html
+# Only ignore generated index.html files (not templates/index.html)
+/index.html
+output/**/index.html
 index.raw.txt
 styles.css
 design_notes.md
