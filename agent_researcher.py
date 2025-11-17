@@ -178,8 +178,14 @@ def run_researcher(
             "- OpenAI: Get at https://platform.openai.com/api-keys\n"
             "- OpenRouter: Get at https://openrouter.ai/"
         )
-    _require_env("GOOGLE_API_KEY")
-    _require_env("GOOGLE_CSE_ID")
+    
+    # Google API is optional - warn but don't fail
+    google_key = os.getenv("GOOGLE_API_KEY")
+    google_cse = os.getenv("GOOGLE_CSE_ID")
+    if not google_key or not google_cse:
+        print("⚠️  Warning: Google Search API not configured")
+        print("   Research agent will work with limited functionality")
+        print("   Set GOOGLE_API_KEY and GOOGLE_CSE_ID for full features")
 
     if not topic:
         topic = _compose_topic(job_role, job_level)

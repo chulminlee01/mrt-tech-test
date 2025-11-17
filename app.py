@@ -194,10 +194,16 @@ def run_generation(job_id, job_role, job_level, language):
         })
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ Generation failed: {e}", flush=True)
+        print(f"Traceback:\n{error_trace}", flush=True)
+        
         generation_status[job_id].update({
             "status": "failed",
             "progress": f"Error: {str(e)}",
             "error": str(e),
+            "error_trace": error_trace,
             "failed_at": datetime.now().isoformat()
         })
     finally:
@@ -231,6 +237,60 @@ def health():
         "version": "2.0.0-nvidia-support",
         "agents_count": len(AGENTS)
     })
+
+
+@app.route("/api/test-llm")
+def test_llm():
+    """Test LLM connection and configuration."""
+    try:
+        from llm_client import create_llm_client
+        
+        # Check environment variables
+        nvidia_key = os.getenv("NVIDIA_API_KEY")
+        openai_key = os.getenv("OPENAI_API_KEY")
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        
+        llm_config = {
+            "nvidia_configured": bool(nvidia_key),
+            "openai_configured": bool(openai_key),
+            "openrouter_configured": bool(openrouter_key),
+            "openai_api_base": os.getenv("OPENAI_API_BASE", "Not set"),
+            "default_model": os.getenv("DEFAULT_MODEL", "Not set")
+        }
+        
+        # Try to create LLM client
+        try:
+            llm = create_llm_client(temperature=0.7)
+            
+            # Try a simple completion
+            response = llm.invoke("Say 'Hello, NVIDIA works!'")
+            
+            return jsonify({
+                "success": True,
+                "message": "LLM is working!",
+                "config": llm_config,
+                "test_response": str(response.content) if hasattr(response, 'content') else str(response),
+                "llm_model": getattr(llm, 'model_name', 'unknown')
+            })
+            
+        except Exception as llm_error:
+            import traceback
+            return jsonify({
+                "success": False,
+                "message": "LLM creation or test failed",
+                "config": llm_config,
+                "error": str(llm_error),
+                "traceback": traceback.format_exc()
+            }), 500
+            
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "success": False,
+            "message": "Test endpoint error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 
 @app.route("/api/version")

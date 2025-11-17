@@ -37,10 +37,22 @@ class GoogleCSETool(BaseTool):
     
     def _run(self, query: str) -> str:
         """Execute Google CSE search."""
+        # Check if Google API is configured
+        google_key = os.getenv("GOOGLE_API_KEY")
+        google_cse = os.getenv("GOOGLE_CSE_ID")
+        
+        if not google_key or not google_cse:
+            print(f"\n⚠️  [Research Analyst] Google Search not configured, using general knowledge for: '{query[:60]}...'\n", flush=True)
+            return f"Google Search API not configured. Based on general knowledge about {query}, here are standard best practices for technical hiring and coding assessments in this area."
+        
         print(f"\n🔍 [Research Analyst] Executing Google CSE search: '{query[:60]}...'\n", flush=True)
-        result = recent_google_search(query)
-        print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
-        return result
+        try:
+            result = recent_google_search(query)
+            print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
+            return result
+        except Exception as e:
+            print(f"\n⚠️  [Research Analyst] Search failed: {e}\n", flush=True)
+            return f"Search failed. Using general knowledge about {query}."
 
 
 # ============================================================================
