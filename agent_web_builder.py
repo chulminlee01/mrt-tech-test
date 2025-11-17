@@ -189,12 +189,7 @@ def _render_assignments(assignments: List[Dict[str, Any]], html_dir: Path) -> st
       {starter_html}
     </div>
 
-    {f"""
-    <div class="assignment-section">
-      <h4>💬 심층 토론 질문</h4>
-      <ol class="assignment-list">{_ordered_items(assignment.get("discussion_questions"))}</ol>
-    </div>
-    """ if assignment.get("discussion_questions") else ""}
+    {'<div class="assignment-section"><h4>💬 심층 토론 질문</h4><ol class="assignment-list">' + _ordered_items(assignment.get("discussion_questions")) + '</ol></div>' if assignment.get("discussion_questions") else ""}
   </div>
 </article>
 """)
