@@ -328,8 +328,8 @@ GOOGLE_API_KEY=AIza...                    # Google CSE
 GOOGLE_CSE_ID=your_search_engine_id
 
 # Optional for Better Quality
-NVIDIA_API_KEY=nvapi-...                  # For other agents
-DEFAULT_MODEL=minimaxai/minimax-m2
+NVIDIA_API_KEY=nvapi-...                  # For NVIDIA API
+DEFAULT_MODEL=deepseek-ai/deepseek-v3.1-terminus
 
 # Optional Attribution
 OPENROUTER_SITE_URL=https://myrealtrip.com
@@ -338,9 +338,9 @@ OPENROUTER_APP_NAME=MRT Tech Test Generator
 
 ### Multi-Provider Setup
 
-- **CrewAI agents** → OpenRouter (LiteLLM compatible)
-- **Other agents** → NVIDIA minimax-m2 (faster, better quality)
-- **Automatic fallback** → If NVIDIA fails, uses OpenRouter
+- **All agents** → NVIDIA DeepSeek v3.1 with thinking (primary)
+- **Automatic fallback** → Moonshot Kimi → Llama → Gemma → Mistral
+- **Also supports** → OpenAI, OpenRouter
 
 ---
 

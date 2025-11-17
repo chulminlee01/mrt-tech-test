@@ -85,10 +85,9 @@ def create_llm_client(
     Create LLM client with automatic fallback.
     
     Fallback order:
-    1. NVIDIA minimax-m2 (if NVIDIA_API_KEY is set)
+    1. NVIDIA DeepSeek v3.1 (if NVIDIA_API_KEY is set)
     2. OpenAI GPT (if OPENAI_API_KEY is set)
-    3. DeepSeek v3.1-terminus via OpenRouter (with thinking)
-    4. OpenRouter fallback model
+    3. OpenRouter (if OPENROUTER_API_KEY is set)
     
     Args:
         model: Optional model override
@@ -118,6 +117,7 @@ def create_llm_client(
             
             # If NVIDIA model not accessible, try known good models
             fallback_models = [
+                "moonshotai/kimi-k2-instruct-0905",
                 "deepseek-ai/deepseek-v3.1-terminus",
                 "meta/llama-3.1-8b-instruct",
                 "google/gemma-2-9b-it",
