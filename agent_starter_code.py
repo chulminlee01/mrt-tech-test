@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from llm_client import create_llm_client
+from llm_client import create_llm_client, create_nvidia_llm_direct
 
 
 LANGUAGE_EXTENSION = {
@@ -87,7 +87,12 @@ def _dataset_preview(dataset: dict) -> Dict[str, object]:
 
 def _build_llm(model: Optional[str], temperature: Optional[float]):
     temp_val = temperature if temperature is not None else float(os.getenv("OPENAI_TEMPERATURE", "0.2"))
-    return create_llm_client(model=model, temperature=temp_val)
+    
+    # Use direct NVIDIA if available (bypasses LiteLLM)
+    if os.getenv("NVIDIA_API_KEY") and not model:
+        return create_nvidia_llm_direct(temperature=temp_val)
+    else:
+        return create_llm_client(model=model, temperature=temp_val)
 
 
 def _parse_code_block(content: str) -> str:

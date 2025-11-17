@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 
-from llm_client import create_llm_client
+from llm_client import create_llm_client, create_nvidia_llm_direct
 
 
 def _normalize_model_id(name: Optional[str]) -> Optional[str]:
@@ -100,7 +100,12 @@ def run_web_designer(
     html_content = _read_html(Path(html_path))
 
     temp_val = temperature if temperature is not None else float(os.getenv("OPENAI_TEMPERATURE", "0.1"))
-    llm = create_llm_client(model=model, temperature=temp_val)
+    
+    # Use direct NVIDIA if available (bypasses LiteLLM)
+    if os.getenv("NVIDIA_API_KEY") and not model:
+        llm = create_nvidia_llm_direct(temperature=temp_val)
+    else:
+        llm = create_llm_client(model=model, temperature=temp_val)
 
     design_research = _recent_google_search(
         "modern landing page design best practices 2024 typography accessibility"

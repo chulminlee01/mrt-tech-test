@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from llm_client import create_llm_client
+from llm_client import create_llm_client, create_nvidia_llm_direct
 
 
 def _normalize_model_id(name: str) -> str:
@@ -145,7 +145,12 @@ def run_question_generator(
     research_summary = _ensure_report_exists(report_path)
 
     temp_val = temperature if temperature is not None else float(os.getenv("OPENAI_TEMPERATURE", "0.35"))
-    llm = create_llm_client(model=model, temperature=temp_val)
+    
+    # Use direct NVIDIA if available (bypasses LiteLLM)
+    if os.getenv("NVIDIA_API_KEY") and not model:
+        llm = create_nvidia_llm_direct(temperature=temp_val)
+    else:
+        llm = create_llm_client(model=model, temperature=temp_val)
 
     schema_description = json.dumps(
         {

@@ -17,7 +17,7 @@ except ImportError:
 from langchain_core.tools import Tool
 from langchain import hub
 
-from llm_client import create_llm_client
+from llm_client import create_llm_client, create_nvidia_llm_direct
 
 
 def _require_env(var_name: str) -> str:
@@ -197,7 +197,12 @@ def run_researcher(
 
     # Allow model override via args, then env; default to configured model with fallback
     temp_val = temperature if temperature is not None else float(os.getenv("OPENAI_TEMPERATURE", "0"))
-    llm = create_llm_client(model=model, temperature=temp_val)
+    
+    # Use direct NVIDIA if available (bypasses LiteLLM)
+    if os.getenv("NVIDIA_API_KEY") and not model:
+        llm = create_nvidia_llm_direct(temperature=temp_val)
+    else:
+        llm = create_llm_client(model=model, temperature=temp_val)
 
     # Prefer a recent Google search tool limited to last N months
     tools = [
