@@ -46,26 +46,17 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Tell LiteLLM to treat ALL unknown models as OpenAI-compatible
-    # This allows any model name to route through OPENAI_API_BASE
-    os.environ["LITELLM_DROP_PARAMS"] = "True"
-    
-    print(f"   Configured for LiteLLM routing")
     print(f"   Request timeout: 180 seconds")
     
-    # Use a generic model name that LiteLLM recognizes
-    # LiteLLM will use the OPENAI_API_BASE we set
-    # But we need to somehow pass the actual model...
-    # Workaround: Use model_name parameter
+    # Simple approach: Just pass the model name and base_url
+    # The OpenAI Python client will handle the request to NVIDIA
     return ChatOpenAI(
-        model="gpt-3.5-turbo",  # Generic name LiteLLM recognizes
+        model=nvidia_model,
         temperature=temperature,
-        model_name=nvidia_model,  # Actual NVIDIA model
         base_url=nvidia_base,
         api_key=nvidia_key,
         request_timeout=180,
-        max_retries=3,
-        model_kwargs={"model": nvidia_model}  # Override with actual model
+        max_retries=3
     )
 
 
