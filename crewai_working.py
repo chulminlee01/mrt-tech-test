@@ -177,8 +177,7 @@ def _run_crewai_classic(
     elif openai_key:
         print("🔧 Using OpenAI API")
         llm = create_llm_client(temperature=0.7)
-    print()
-    
+        print()
     elif openrouter_key:
         print("🔧 Using OpenRouter API")
         llm = create_llm_client(temperature=0.7)
