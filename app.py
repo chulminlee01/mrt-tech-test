@@ -8,15 +8,24 @@ import sys
 import io
 import json
 import threading
+import logging
 from pathlib import Path
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory, Response
+
+# Suppress BrokenPipeError from CrewAI logging
+logging.getLogger().addHandler(logging.NullHandler())
+logging.captureWarnings(True)
 
 from crewai_working import generate_with_crewai
 from agent_starter_code import run_starter_code_generator
 from agent_web_designer import run_web_designer
 
 app = Flask(__name__)
+
+# Configure logging to suppress BrokenPipeError
+import warnings
+warnings.filterwarnings("ignore", category=BrokenPipeError)
 
 # Store generation status
 generation_status = {}

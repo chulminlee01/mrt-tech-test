@@ -36,8 +36,8 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
     # Primary and fallback models
-    primary_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
-    fallback_model = "moonshotai/kimi-k2-instruct-0905"
+    primary_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
+    fallback_model = "meta/llama-3.1-8b-instruct"
     
     print(f"🚀 Creating NVIDIA LLM")
     print(f"   Primary model: {primary_model}")

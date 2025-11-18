@@ -14,7 +14,7 @@ services:
       - key: NVIDIA_API_KEY
         sync: false
       - key: DEFAULT_MODEL
-        value: deepseek-ai/deepseek-v3.1-terminus
+        value: qwen/qwen3-next-80b-a3b-instruct
       - key: NVIDIA_BASE_URL
         value: https://integrate.api.nvidia.com/v1
       - key: DEEPSEEK_THINKING
