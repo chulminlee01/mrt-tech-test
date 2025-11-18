@@ -42,27 +42,23 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     print(f"   Model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
     
-    # Set environment for both OpenAI client library AND LiteLLM
+    # Set environment for OpenAI client library
+    # The client will use these to make requests to NVIDIA
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # For LiteLLM: Use "openai/" prefix to indicate OpenAI-compatible custom endpoint
-    # LiteLLM format: openai/<model_name> tells it to use OpenAI with custom base_url
-    litellm_model = f"openai/{nvidia_model}"
+    print(f"   Request timeout: 180 seconds")
+    print(f"   Max retries: 3")
     
-    print(f"   LiteLLM model format: {litellm_model}")
-    print(f"   This tells LiteLLM: Use OpenAI client with custom base_url")
-    
-    # Thinking is DISABLED by default for speed (no <think> tags)
-    # Do NOT enable thinking to avoid timeouts
-    print(f"   Thinking Mode: DISABLED (for speed)")
-    print(f"   Timeout: 180 seconds")
-    
-    # Create ChatOpenAI with longer timeout
+    # Create ChatOpenAI WITHOUT the openai/ prefix
+    # When base_url is set, the OpenAI client sends requests directly to NVIDIA
+    # The model name should be the actual NVIDIA model name, not prefixed
     return ChatOpenAI(
-        model=litellm_model,
+        model=nvidia_model,  # Use actual model name without prefix
         temperature=temperature,
-        request_timeout=180,  # 3 minutes timeout
+        base_url=nvidia_base,  # This tells OpenAI client to use NVIDIA
+        api_key=nvidia_key,
+        request_timeout=180,
         max_retries=3
     )
 
