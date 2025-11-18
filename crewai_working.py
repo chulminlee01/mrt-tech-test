@@ -786,8 +786,8 @@ def generate_with_crewai(
     print(f"📁 Output: {output_dir}")
     print()
     
-    # Use CrewAI by default (user requested)
-    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "false").lower() == "true"
+    # Use Simple Pipeline by default (CrewAI has LiteLLM issues with custom models)
+    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "true").lower() == "true"
     
     if use_simple:
         print("⚡ Using simple deterministic pipeline")
