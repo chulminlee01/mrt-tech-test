@@ -48,15 +48,27 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     print(f"   LiteLLM model format: {litellm_model}")
     print(f"   This tells LiteLLM: Use OpenAI client with custom base_url")
     
-    # Create with thinking enabled
-    # The openai/ prefix tells LiteLLM to route via OpenAI client to our base_url
-    return ChatOpenAI(
-        model=litellm_model,
-        temperature=temperature,
-        extra_body={
+    # Check if thinking should be enabled (can disable for speed)
+    enable_thinking = os.getenv("DEEPSEEK_THINKING", "false").lower() == "true"
+    
+    # Create ChatOpenAI with longer timeout to handle DeepSeek
+    llm_kwargs = {
+        "model": litellm_model,
+        "temperature": temperature,
+        "request_timeout": 120,  # 2 minutes timeout instead of default 60s
+        "max_retries": 2
+    }
+    
+    # Only add thinking if enabled
+    if enable_thinking and "deepseek" in nvidia_model.lower():
+        llm_kwargs["extra_body"] = {
             "chat_template_kwargs": {"thinking": True}
         }
-    )
+        print(f"   DeepSeek Thinking: ENABLED (slower but higher quality)")
+    else:
+        print(f"   DeepSeek Thinking: DISABLED (faster responses)")
+    
+    return ChatOpenAI(**llm_kwargs)
 
 
 def _get_nvidia_headers() -> Dict[str, str]:
