@@ -1764,9 +1764,17 @@
         icon.textContent = '✅';
         title.textContent = 'Generation Complete!';
         subtitle.textContent = 'Your tech test is ready';
-        message.textContent = 'Successfully generated all assets including research, assignments, datasets, starter code, and portal.';
+        message.textContent = status.progress || 'Successfully generated all assets including research, assignments, datasets, starter code, and portal.';
         progressBar.style.width = '100%';
-        actions.style.display = 'block';
+        
+        // Only show button if portal is ready (after Phase 2 approval)
+        if (status.portal_ready) {
+          actions.style.display = 'block';
+          subtitle.textContent = '🎉 Portal approved and ready for candidates!';
+        } else {
+          actions.style.display = 'none';
+          subtitle.textContent = 'Processing final steps...';
+        }
         
         // Mark all agents as completed
         agents.forEach(agent => {
@@ -1777,9 +1785,9 @@
           if (statusBadge) statusBadge.textContent = 'Completed ✅';
         });
         
-        if (status.index_url) {
+        if (status.index_url && status.portal_ready) {
           resultLink.href = status.index_url;
-        } else if (status.output_dir) {
+        } else if (status.output_dir && status.portal_ready) {
           // Construct URL from output dir
           const dirName = status.output_dir.split('/').pop();
           resultLink.href = `/output/${dirName}/index.html`;
