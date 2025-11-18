@@ -182,8 +182,7 @@ def _run_crewai_classic(
     elif openrouter_key:
         print("🔧 Using OpenRouter API")
         llm = create_llm_client(temperature=0.7)
-    print()
-    
+        print()
     else:
         print("❌ Error: No LLM API key found")
         print()
