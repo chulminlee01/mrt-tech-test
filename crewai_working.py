@@ -52,9 +52,9 @@ class GoogleCSETool(BaseTool):
         
         print(f"\n🔍 [Research Analyst] Executing Google CSE search: '{query[:60]}...'\n", flush=True)
         try:
-            result = recent_google_search(query)
-            print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
-            return result
+        result = recent_google_search(query)
+        print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
+        return result
         except Exception as e:
             print(f"\n⚠️  [Research Analyst] Search failed: {e}\n", flush=True)
             return f"Search failed. Using general knowledge about {query}."
@@ -65,12 +65,12 @@ class GoogleCSETool(BaseTool):
 # ============================================================================
 
 def create_working_agents(llm):
-    """Create all agents for the team."""
+    """Create all 7 agents for the complete team."""
     
     pm = Agent(
         role="Product Manager",
         goal="Lead team collaboration and decision-making",
-        backstory="""You are an experienced PM at Myrealtrip OTA company. You lead discussions naturally, ask good questions, and make decisions collaboratively. You're supportive and appreciate team input.""",
+        backstory="""You are an experienced PM at Myrealtrip OTA company. You lead discussions naturally, coordinate work between team members, and make final decisions. You're supportive and appreciate team input.""",
         verbose=True,
         allow_delegation=False,
         llm=llm,
@@ -80,17 +80,44 @@ def create_working_agents(llm):
     researcher = Agent(
         role="Research Analyst", 
         goal="Provide actionable insights on technical hiring",
-        backstory="""You research technical hiring best practices. You know industry standards for different experience levels and can recommend specific skills and assignment types. You're analytical but concise.""",
+        backstory="""You research technical hiring best practices. You know industry standards for different experience levels and can recommend specific skills and assignment types.""",
         verbose=True,
         llm=llm,
-        tools=[GoogleCSETool()],  # Keep tool for authentic research
+        tools=[GoogleCSETool()],
         max_iter=2
     )
     
-    designer = Agent(
+    assignment_designer = Agent(
         role="Assignment Designer",
         goal="Propose creative, practical coding assignments",
-        backstory="""You design technical assessments. You're creative in thinking of practical scenarios that test real skills. You understand OTA business and can create relevant challenges.""",
+        backstory="""You design technical assessments. You're creative in thinking of practical OTA scenarios that test real skills. You create assignment concepts and requirements.""",
+        verbose=True,
+        llm=llm,
+        max_iter=2
+    )
+    
+    data_provider = Agent(
+        role="Data Provider",
+        goal="Generate realistic datasets for assignments",
+        backstory="""You create sample datasets that candidates will use. You understand OTA data (hotels, flights, bookings) and generate realistic, useful test data.""",
+        verbose=True,
+        llm=llm,
+        max_iter=2
+    )
+    
+    web_builder = Agent(
+        role="Web Builder",
+        goal="Create the candidate portal webpage",
+        backstory="""You build web portals. You create clean HTML pages that present assignments professionally. You ensure good UX and clear information architecture.""",
+        verbose=True,
+        llm=llm,
+        max_iter=2
+    )
+    
+    web_designer = Agent(
+        role="Web Designer",
+        goal="Style and enhance the portal",
+        backstory="""You design beautiful, modern web interfaces. You apply Myrealtrip branding, ensure accessibility, and create engaging visual experiences.""",
         verbose=True,
         llm=llm,
         max_iter=2
@@ -98,23 +125,14 @@ def create_working_agents(llm):
     
     reviewer = Agent(
         role="QA Reviewer",
-        goal="Ensure assignment quality and appropriateness",
-        backstory="""You review technical assignments for quality. You check difficulty level, relevance, and clarity. You provide constructive feedback and catch potential issues.""",
+        goal="Review and ensure quality of all deliverables",
+        backstory="""You review everything for quality - assignments, datasets, and the website. You check for bugs, clarity issues, and provide constructive feedback.""",
         verbose=True,
         llm=llm,
         max_iter=2
     )
     
-    tech_writer = Agent(
-        role="Technical Writer",
-        goal="Ensure documentation quality and clarity",
-        backstory="""You review documentation for clarity and completeness. You ensure 
-        requirements are well-written and candidates can understand them.""",
-        verbose=True,
-        llm=llm
-    )
-    
-    return pm, researcher, designer, reviewer, tech_writer
+    return pm, researcher, assignment_designer, data_provider, web_builder, web_designer, reviewer
 
 
 # ============================================================================
@@ -164,8 +182,8 @@ def _run_crewai_classic(
     elif openrouter_key:
         print("🔧 Using OpenRouter API")
         llm = create_llm_client(temperature=0.7)
-        print()
-        
+    print()
+    
     else:
         print("❌ Error: No LLM API key found")
         print()
@@ -175,17 +193,20 @@ def _run_crewai_classic(
         print("  - OPENROUTER_API_KEY")
         raise LLMClientError("No LLM API key configured")
     
-    # Create agents (Technical Writer optional - not needed for core workflow)
-    pm, researcher, designer, reviewer, tech_writer = create_working_agents(llm)
+    # Create all 7 agents
+    pm, researcher, assignment_designer, data_provider, web_builder, web_designer, reviewer = create_working_agents(llm)
     
-    print("👥 Team Assembled:")
+    print("👥 Full Team Assembled (7 agents):")
     print(f"   👔 {pm.role}")
     print(f"   🔍 {researcher.role}")
-    print(f"   ✏️ {designer.role}")
+    print(f"   ✏️ {assignment_designer.role}")
+    print(f"   📊 {data_provider.role}")
+    print(f"   🌐 {web_builder.role}")
+    print(f"   🎨 {web_designer.role}")
     print(f"   🔎 {reviewer.role}")
     print()
     
-    # Task 1: PM Initialization & Research Delegation  
+    # Task 1: PM Initialization & Research Delegation
     task1 = Task(
         description=f"""You're the PM at Myrealtrip. Announce the project:
 
@@ -237,114 +258,138 @@ Lead the discussion naturally (4-5 sentences). Reference specific findings from 
         async_execution=False
     )
     
-    # Task 4: Assignment Creation (based on discussion)
+    # Task 4: Assignment Designer Proposes Ideas
     task4 = Task(
-        description=f"""You're the Assignment Designer. Respond to the PM's question:
+        description=f"""You're the Assignment Designer. Respond to PM:
 
-"I have some ideas! Based on the research, I propose we create 5 assignments:
+"I have some great ideas! Based on the research, I propose 5 assignments:
 
-1. [Assignment idea 1 - specific OTA scenario]
-2. [Assignment idea 2 - different technical focus]  
-3. [Assignment idea 3 - another OTA scenario]
-4. [Assignment idea 4 - integration/API focus]
-5. [Assignment idea 5 - comprehensive challenge]
+1. [Assignment 1 - specific OTA scenario]
+2. [Assignment 2 - different focus]  
+3. [Assignment 3 - another scenario]
+4. [Assignment 4 - integration challenge]
+5. [Assignment 5 - comprehensive test]
 
-Each one will test the key skills we discussed while being relevant to OTA operations. What do you think, PM?"
+These will test the key skills while being relevant to OTA operations."
 
-Propose 5 specific assignment ideas with brief descriptions (8-10 lines).""",
-        expected_output="Designer proposes 5 specific assignment ideas related to OTA scenarios",
-        agent=designer,
+Propose 5 specific ideas (6-8 lines).""",
+        expected_output="Designer proposes 5 assignment ideas",
+        agent=assignment_designer,
         context=[task3],
         async_execution=False
     )
     
-    # Task 5: Quality Review
+    # Task 5: PM Approves and Coordinates Asset Creation
     task5 = Task(
-        description=f"""You're the QA Reviewer. Evaluate the proposed assignments:
+        description=f"""You're the PM. Approve and coordinate:
 
-"I've reviewed the 5 proposed assignments. They look solid for {job_level} level:
-- They cover the essential skills we identified
-- The OTA scenarios are realistic and relevant  
-- The scope seems appropriate for 2-4 hour assignments
+"Perfect! I love these ideas. Let's move forward:
 
-I have one suggestion: [mention one minor improvement]
+Data Provider - please create realistic datasets for these assignments.
+Web Builder - build the candidate portal.
+Web Designer - apply our Myrealtrip branding.
 
-Overall assessment: APPROVED. These will effectively evaluate candidates."
+Let's get these assets ready!"
 
-Provide constructive review (4-5 sentences).""",
-        expected_output="QA review with approval and one constructive suggestion",
-        agent=reviewer,
+Delegate to the asset creation team (3-4 sentences).""",
+        expected_output="PM approval and delegation to Data Provider, Web Builder, Web Designer",
+        agent=pm,
         context=[task4],
         async_execution=False
     )
     
-    # Task 6: PM Final Decision
+    # Task 6: Data Provider Confirms
     task6 = Task(
-        description=f"""You're the PM. Give final approval:
+        description=f"""You're the Data Provider. Confirm:
 
-"Excellent work, team! I'm impressed with this collaboration.
+"I'll create realistic OTA datasets - hotels, flights, bookings data. They'll be in JSON/CSV format with realistic data for testing."
 
-Researcher - your insights on {job_level} skills were spot-on.
-Designer - the assignment ideas are creative and practical.
-Reviewer - good catch on [mention the suggestion].
-
-DECISION: APPROVED. Let's proceed with these 5 assignments. Great teamwork everyone!"
-
-Provide encouraging final approval (5-6 sentences).""",
-        expected_output="PM final approval with specific appreciation for each team member's contribution",
-        agent=pm,
+Brief confirmation (2 sentences).""",
+        expected_output="Data Provider confirms dataset creation",
+        agent=data_provider,
         context=[task5],
         async_execution=False
     )
     
-    # Create crew (4 agents: PM, Researcher, Designer, Reviewer)
-    print("📋 Tasks Defined:")
-    print(f"   1. PM Initialization & Delegation")
-    print(f"   2. Research Execution (Google CSE)")
-    print(f"   3. Team Discussion (PM leads)")
-    print(f"   4. Assignment Creation (Designer)")
-    print(f"   5. Quality Review (QA Reviewer)")
-    print(f"   6. PM Final Decision")
+    # Task 7: Web Builder Confirms
+    task7 = Task(
+        description=f"""You're the Web Builder. Confirm:
+
+"I'll build a clean candidate portal with all assignment details, datasets, and starter code clearly presented."
+
+Brief confirmation (1-2 sentences).""",
+        expected_output="Web Builder confirms portal creation",
+        agent=web_builder,
+        context=[task6],
+        async_execution=False
+    )
+    
+    # Task 8: Web Designer Confirms
+    task8 = Task(
+        description=f"""You're the Web Designer. Confirm:
+
+"I'll apply Myrealtrip branding with our emerald green colors and modern, accessible design."
+
+Brief confirmation (1-2 sentences).""",
+        expected_output="Web Designer confirms styling",
+        agent=web_designer,
+        context=[task7],
+        async_execution=False
+    )
+    
+    # Task 9: PM Triggers Actual Generation
+    task9 = Task(
+        description=f"""You're the PM. Say:
+
+"Great! Team, please proceed with your work. I'll review everything once it's ready."
+
+Brief go-ahead (1 sentence).""",
+        expected_output="PM gives go-ahead for actual work",
+        agent=pm,
+        context=[task8],
+        async_execution=False
+    )
+    
+    # Create crew with all 7 agents
+    print("📋 Phase 1 Tasks (Assignment Planning):")
+    print(f"   1. PM Kickoff")
+    print(f"   2. Researcher Findings")
+    print(f"   3. PM Discussion Facilitation")
+    print(f"   4. Designer Proposals")
+    print(f"   5. PM Coordinates Asset Creation")
+    print(f"   6-8. Asset Team Confirms (Data, Web, Design)")
+    print(f"   9. PM Go-Ahead")
     print()
-    print("🚀 Initializing CrewAI Team (4 core agents)...")
+    print("🚀 Initializing CrewAI Team (7 agents)...")
     print()
     
-    crew = Crew(
-        agents=[pm, researcher, designer, reviewer],
-        tasks=[task1, task2, task3, task4, task5, task6],
+    crew_phase1 = Crew(
+        agents=[pm, researcher, assignment_designer, data_provider, web_builder, web_designer, reviewer],
+        tasks=[task1, task2, task3, task4, task5, task6, task7, task8, task9],
         process=Process.sequential,
         verbose=True
     )
     
     print("=" * 70)
-    print("🎬 Starting Team Collaboration...")
+    print("🎬 Phase 1: Assignment Planning & Coordination...")
     print("=" * 70)
     print()
     
-    # Execute
-    result = crew.kickoff()
+    # Execute Phase 1
+    result_phase1 = crew_phase1.kickoff()
     
     print()
     print("=" * 70)
-    print("✅ Team Collaboration Complete")
+    print("✅ Phase 1 Complete - Moving to Asset Generation")
     print("=" * 70)
     print()
     
-    # Save research output to file
-    result_text = str(result)
+    # Save discussion output to file
+    discussion_text = str(result_phase1)
     
-    # Extract research content (before discussion section)
-    research_lines = []
-    for line in result_text.split('\n'):
-        if '[PM]' in line and 'discuss' in line.lower():
-            break  # Stop at discussion phase
-        if line.strip():
-            research_lines.append(line)
-    
-    if research_lines:
-        research_content = '\n'.join(research_lines)
-        Path(CURRENT_RESEARCH_PATH).write_text(research_content, encoding="utf-8")
-        print(f"✅ Research saved to: {CURRENT_RESEARCH_PATH}")
+    # Save the full collaboration discussion
+    Path(CURRENT_RESEARCH_PATH).write_text(discussion_text, encoding="utf-8")
+    print(f"✅ Team discussion saved to: {CURRENT_RESEARCH_PATH}")
     
     # For assignments, use the proven agent_question_generator
     print()
@@ -387,9 +432,11 @@ Provide encouraging final approval (5-6 sentences).""",
                 output_dir=str(output_dir / "datasets"),
                 language=language
             )
+            print("✅ Datasets generated")
         except Exception as e:
             print(f"⚠️  Dataset generation error: {e}")
         
+        print()
         print("🌐 Building web portal...")
         try:
             run_web_builder(
@@ -399,13 +446,118 @@ Provide encouraging final approval (5-6 sentences).""",
                 language=language,
                 starter_dir=str(output_dir / "starter_code")
             )
+            print("✅ Web portal built")
         except Exception as e:
             print(f"⚠️  Web builder error: {e}")
+        
+        print()
+        print("🎨 Applying custom styling...")
+        try:
+            from agent_web_designer import run_web_designer
+            run_web_designer(
+                html_path=str(output_dir / "index.html"),
+                css_output=str(output_dir / "styles.css"),
+                notes_output=str(output_dir / "design_notes.md"),
+                language=language
+            )
+            print("✅ Styling applied")
+        except Exception as e:
+            print(f"⚠️  Web designer error: {e}")
+    
+    # Phase 2: Website QA and Final Approval
+    portal_path = output_dir / "index.html"
+    if portal_path.exists():
+        print()
+        print("=" * 70)
+        print("🎬 Phase 2: Website Quality Assurance")
+        print("=" * 70)
+        print()
+        
+        # Task 10: QA Reviews Website
+        task10 = Task(
+            description=f"""You're the QA Reviewer. The website has been built at {portal_path}.
+
+Review and report:
+
+"I've reviewed the candidate portal. Here's my assessment:
+
+✅ Strengths:
+- [Mention 2-3 good aspects]
+
+⚠️ Suggestions:
+- [Mention 1-2 minor improvements if any, or say 'No issues found']
+
+Overall: The portal is [ready/needs minor tweaks] for candidates."
+
+Provide honest review (4-5 sentences).""",
+            expected_output="QA review of the website with strengths and suggestions",
+            agent=reviewer,
+            async_execution=False
+        )
+        
+        # Task 11: Team Discusses QA Feedback
+        task11 = Task(
+            description=f"""You're the PM. Respond to QA feedback:
+
+"Thanks for the thorough review! [Reference the QA's feedback]
+
+Team, what do you think about the suggestions? Web Builder and Designer, any quick improvements we can make?"
+
+Facilitate brief discussion (2-3 sentences).""",
+            expected_output="PM acknowledges QA feedback and asks team for input",
+            agent=pm,
+            context=[task10],
+            async_execution=False
+        )
+        
+        # Task 12: PM Final Approval
+        task12 = Task(
+            description=f"""You're the PM. Give final sign-off:
+
+"Alright team! The tech test is complete and looking great:
+
+✅ Research-backed assignments  
+✅ Realistic OTA datasets
+✅ Professional candidate portal
+✅ Quality assured
+
+FINAL DECISION: APPROVED FOR DELIVERY
+
+Excellent collaboration everyone! The portal is ready for candidates. 🎉"
+
+Provide final approval and summary (5-6 sentences).""",
+            expected_output="PM final approval with summary of deliverables and team appreciation",
+            agent=pm,
+            context=[task11],
+            async_execution=False
+        )
+        
+        # Execute Phase 2
+        crew_phase2 = Crew(
+            agents=[pm, reviewer, web_builder, web_designer],
+            tasks=[task10, task11, task12],
+            process=Process.sequential,
+            verbose=True
+        )
+        
+        print("🎬 Starting Phase 2: Website QA...")
+        print()
+        result_phase2 = crew_phase2.kickoff()
+        
+        print()
+        print("=" * 70)
+        print("✅ Phase 2 Complete - Final Approval Given!")
+        print("=" * 70)
+        print()
+    
+    # Final result
+    final_result = f"{discussion_text}\n\n{'='*70}\n\n{str(result_phase2) if portal_path.exists() else ''}"
     
     return {
         "status": "completed",
-        "result": result_text,
-        "output_dir": str(output_dir)
+        "result": final_result,
+        "output_dir": str(output_dir),
+        "portal_ready": portal_path.exists()
     }
 
 
