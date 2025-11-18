@@ -351,10 +351,15 @@ Provide encouraging final approval (5-6 sentences).""",
     print("📝 Generating structured assignments using proven generator...")
     try:
         from agent_question_generator import run_question_generator
+        import traceback
         
         # Get job info from paths
         parts = str(output_dir).split('/')
         job_info = parts[-1] if parts else ""
+        
+        print(f"   Input: {CURRENT_RESEARCH_PATH}")
+        print(f"   Output: {CURRENT_ASSIGNMENTS_PATH}")
+        print(f"   Calling assignment generator...")
         
         run_question_generator(
             job_role=job_role,
@@ -367,8 +372,12 @@ Provide encouraging final approval (5-6 sentences).""",
         print(f"✅ Assignments generated and saved")
     except Exception as e:
         print(f"⚠️  Assignment generation error: {e}")
+        print(f"   Error type: {type(e).__name__}")
+        traceback.print_exc()
+        print(f"   Continuing with post-processing...")
     
-    # Post-processing: Generate datasets
+    # Post-processing: Generate datasets (even if assignments failed, try to continue)
+    print()
     if Path(CURRENT_ASSIGNMENTS_PATH).exists():
         print()
         print("📊 Generating datasets...")
