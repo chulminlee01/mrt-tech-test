@@ -393,17 +393,22 @@ Brief go-ahead (1 sentence).""",
     
     # For assignments, use the proven agent_question_generator
     print()
-    print("📝 Generating structured assignments using proven generator...")
+    print("=" * 70)
+    print("📝 Phase 1.5: Generating Detailed Assignments")
+    print("=" * 70)
+    
     try:
         from agent_question_generator import run_question_generator
         import traceback
         
-        # Get job info from paths
-        parts = str(output_dir).split('/')
-        job_info = parts[-1] if parts else ""
+        print(f"   Reading research from: {CURRENT_RESEARCH_PATH}")
+        print(f"   Will save assignments to: {CURRENT_ASSIGNMENTS_PATH}")
         
-        print(f"   Input: {CURRENT_RESEARCH_PATH}")
-        print(f"   Output: {CURRENT_ASSIGNMENTS_PATH}")
+        # Make sure research file exists
+        if not Path(CURRENT_RESEARCH_PATH).exists():
+            print(f"   ⚠️  Research file not found, creating placeholder...")
+            Path(CURRENT_RESEARCH_PATH).write_text(f"Research for {job_level} {job_role}", encoding="utf-8")
+        
         print(f"   Calling assignment generator...")
         
         run_question_generator(
@@ -412,57 +417,123 @@ Brief go-ahead (1 sentence).""",
             company_name="Myrealtrip OTA Company",
             input_path=CURRENT_RESEARCH_PATH,
             output_path=CURRENT_ASSIGNMENTS_PATH,
-            language=language
+            language=language,
+            model=None,  # Use default model
+            temperature=0.5
         )
-        print(f"✅ Assignments generated and saved")
+        print(f"   ✅ Assignments generated and saved to: {CURRENT_ASSIGNMENTS_PATH}")
+        
+        # Verify file was created
+        if Path(CURRENT_ASSIGNMENTS_PATH).exists():
+            file_size = Path(CURRENT_ASSIGNMENTS_PATH).stat().st_size
+            print(f"   ✅ Verified: assignments.json created ({file_size} bytes)")
+        else:
+            print(f"   ❌ ERROR: assignments.json was NOT created!")
+            
     except Exception as e:
-        print(f"⚠️  Assignment generation error: {e}")
+        print(f"❌ Assignment generation failed: {e}")
         print(f"   Error type: {type(e).__name__}")
+        import traceback
         traceback.print_exc()
-        print(f"   Continuing with post-processing...")
+        print(f"   ⚠️  Attempting to continue with remaining steps...")
     
-    # Post-processing: Generate datasets (even if assignments failed, try to continue)
+    # Post-processing: Generate all assets
     print()
-    if Path(CURRENT_ASSIGNMENTS_PATH).exists():
+    print("=" * 70)
+    print("🏗️  Asset Generation Phase")
+    print("=" * 70)
+    
+    assignments_exists = Path(CURRENT_ASSIGNMENTS_PATH).exists()
+    print(f"   Assignments file exists: {assignments_exists}")
+    
+    if assignments_exists:
+        # Generate datasets
         print()
-        print("📊 Generating datasets...")
+        print("📊 Step 1: Generating datasets...")
         try:
+            datasets_dir = str(output_dir / "datasets")
+            print(f"   Target: {datasets_dir}")
             run_data_provider(
                 assignments_path=CURRENT_ASSIGNMENTS_PATH,
-                output_dir=str(output_dir / "datasets"),
+                output_dir=datasets_dir,
                 language=language
             )
-            print("✅ Datasets generated")
+            print(f"   ✅ Datasets generated in: {datasets_dir}")
         except Exception as e:
-            print(f"⚠️  Dataset generation error: {e}")
+            print(f"   ❌ Dataset generation error: {e}")
+            import traceback
+            traceback.print_exc()
         
+        # Generate starter code
         print()
-        print("🌐 Building web portal...")
+        print("🧰 Step 2: Generating starter code...")
         try:
+            from agent_starter_code import run_starter_code_generator
+            starter_dir = str(output_dir / "starter_code")
+            print(f"   Target: {starter_dir}")
+            run_starter_code_generator(
+                assignments_path=CURRENT_ASSIGNMENTS_PATH,
+                output_dir=starter_dir
+            )
+            print(f"   ✅ Starter code generated in: {starter_dir}")
+        except Exception as e:
+            print(f"   ❌ Starter code error: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Build web portal
+        print()
+        print("🌐 Step 3: Building web portal...")
+        try:
+            html_path = str(output_dir / "index.html")
+            print(f"   Target: {html_path}")
             run_web_builder(
                 assignments_path=CURRENT_ASSIGNMENTS_PATH,
                 research_summary_path=CURRENT_RESEARCH_PATH,
-                output_html=str(output_dir / "index.html"),
+                output_html=html_path,
                 language=language,
                 starter_dir=str(output_dir / "starter_code")
             )
-            print("✅ Web portal built")
+            print(f"   ✅ Web portal built: {html_path}")
+            
+            # Verify
+            if Path(html_path).exists():
+                size = Path(html_path).stat().st_size
+                print(f"   ✅ Verified: index.html created ({size} bytes)")
+            else:
+                print(f"   ❌ ERROR: index.html was NOT created!")
         except Exception as e:
-            print(f"⚠️  Web builder error: {e}")
+            print(f"   ❌ Web builder error: {e}")
+            import traceback
+            traceback.print_exc()
         
+        # Apply styling
         print()
-        print("🎨 Applying custom styling...")
+        print("🎨 Step 4: Applying custom styling...")
         try:
             from agent_web_designer import run_web_designer
-            run_web_designer(
-                html_path=str(output_dir / "index.html"),
-                css_output=str(output_dir / "styles.css"),
-                notes_output=str(output_dir / "design_notes.md"),
-                language=language
-            )
-            print("✅ Styling applied")
+            html_path = str(output_dir / "index.html")
+            css_path = str(output_dir / "styles.css")
+            print(f"   HTML: {html_path}")
+            print(f"   CSS: {css_path}")
+            
+            if Path(html_path).exists():
+                run_web_designer(
+                    html_path=html_path,
+                    css_output=css_path,
+                    notes_output=str(output_dir / "design_notes.md"),
+                    language=language
+                )
+                print(f"   ✅ Styling applied")
+            else:
+                print(f"   ⚠️  Skipping styling - HTML not found")
         except Exception as e:
-            print(f"⚠️  Web designer error: {e}")
+            print(f"   ❌ Web designer error: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("   ❌ Assignments file not found - skipping asset generation")
+        print(f"   Expected: {CURRENT_ASSIGNMENTS_PATH}")
     
     # Phase 2: Website QA and Final Approval
     portal_path = output_dir / "index.html"
