@@ -28,15 +28,15 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     if not nvidia_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
     
-    # Use fast, reliable model instead of DeepSeek to avoid timeouts
-    # DeepSeek with thinking causes 504 timeouts
-    nvidia_model = os.getenv("DEFAULT_MODEL", "meta/llama-3.1-8b-instruct")
+    # Use Moonshot Kimi as default (fast, reliable, no timeouts)
+    nvidia_model = os.getenv("DEFAULT_MODEL", "moonshotai/kimi-k2-instruct-0905")
     nvidia_base = "https://integrate.api.nvidia.com/v1"
     
-    # If explicitly set to DeepSeek and timeouts occur, auto-fallback to Llama
-    if "deepseek" in nvidia_model.lower():
-        print("⚠️  Note: DeepSeek may cause timeouts. Consider using meta/llama-3.1-8b-instruct for speed.")
-        print("   Set DEFAULT_MODEL=meta/llama-3.1-8b-instruct in Railway Variables to use faster model.")
+    print(f"   Using model: {nvidia_model}")
+    
+    # Warn if using slow models
+    if "deepseek" in nvidia_model.lower() or "minimax" in nvidia_model.lower():
+        print("   ⚠️  This model may cause timeouts. Consider moonshotai/kimi-k2-instruct-0905 for speed.")
     
     print(f"🚀 Creating NVIDIA LLM directly")
     print(f"   Model: {nvidia_model}")
@@ -53,27 +53,18 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     print(f"   LiteLLM model format: {litellm_model}")
     print(f"   This tells LiteLLM: Use OpenAI client with custom base_url")
     
-    # Check if thinking should be enabled (can disable for speed)
-    enable_thinking = os.getenv("DEEPSEEK_THINKING", "false").lower() == "true"
+    # Thinking is DISABLED by default for speed (no <think> tags)
+    # Do NOT enable thinking to avoid timeouts
+    print(f"   Thinking Mode: DISABLED (for speed)")
+    print(f"   Timeout: 180 seconds")
     
-    # Create ChatOpenAI with longer timeout to handle DeepSeek
-    llm_kwargs = {
-        "model": litellm_model,
-        "temperature": temperature,
-        "request_timeout": 120,  # 2 minutes timeout instead of default 60s
-        "max_retries": 2
-    }
-    
-    # Only add thinking if enabled
-    if enable_thinking and "deepseek" in nvidia_model.lower():
-        llm_kwargs["extra_body"] = {
-            "chat_template_kwargs": {"thinking": True}
-        }
-        print(f"   DeepSeek Thinking: ENABLED (slower but higher quality)")
-    else:
-        print(f"   DeepSeek Thinking: DISABLED (faster responses)")
-    
-    return ChatOpenAI(**llm_kwargs)
+    # Create ChatOpenAI with longer timeout
+    return ChatOpenAI(
+        model=litellm_model,
+        temperature=temperature,
+        request_timeout=180,  # 3 minutes timeout
+        max_retries=3
+    )
 
 
 def _get_nvidia_headers() -> Dict[str, str]:
