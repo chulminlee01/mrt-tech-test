@@ -28,14 +28,19 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     if not nvidia_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
     
-    # Force DeepSeek model regardless of DEFAULT_MODEL setting
-    nvidia_model = "deepseek-ai/deepseek-v3.1-terminus"
+    # Use fast, reliable model instead of DeepSeek to avoid timeouts
+    # DeepSeek with thinking causes 504 timeouts
+    nvidia_model = os.getenv("DEFAULT_MODEL", "meta/llama-3.1-8b-instruct")
     nvidia_base = "https://integrate.api.nvidia.com/v1"
+    
+    # If explicitly set to DeepSeek and timeouts occur, auto-fallback to Llama
+    if "deepseek" in nvidia_model.lower():
+        print("⚠️  Note: DeepSeek may cause timeouts. Consider using meta/llama-3.1-8b-instruct for speed.")
+        print("   Set DEFAULT_MODEL=meta/llama-3.1-8b-instruct in Railway Variables to use faster model.")
     
     print(f"🚀 Creating NVIDIA LLM directly")
     print(f"   Model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
-    print(f"   Thinking: ENABLED ✓")
     
     # Set environment for both OpenAI client library AND LiteLLM
     os.environ["OPENAI_API_KEY"] = nvidia_key

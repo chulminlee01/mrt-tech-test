@@ -151,7 +151,7 @@ def _run_crewai_classic(
     
     # Use NVIDIA if available (bypass all LiteLLM complexity)
     if nvidia_key:
-        print("🔧 Using NVIDIA API with DeepSeek v3.1 Terminus")
+        print("🔧 Using NVIDIA API")
         from llm_client import create_nvidia_llm_direct
         llm = create_nvidia_llm_direct(temperature=0.3)  # Lower temp for faster, deterministic responses
         print()
