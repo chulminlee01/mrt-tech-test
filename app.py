@@ -21,11 +21,10 @@ app = Flask(__name__)
 # Store generation status
 generation_status = {}
 
-# Agent definitions for UI (7 agents: 4 CrewAI + 3 post-processing)
+# Agent definitions for UI (6 agents: Designer removed per user request)
 AGENTS = [
     {"id": "pm", "name": "Product Manager", "icon": "👔", "role": "Team Leader & Coordinator"},
     {"id": "researcher", "name": "Research Analyst", "icon": "🔍", "role": "Industry Research"},
-    {"id": "designer", "name": "Assignment Designer", "icon": "✏️", "role": "Question Creation"},
     {"id": "reviewer", "name": "QA Reviewer", "icon": "🔎", "role": "Quality Assurance"},
     {"id": "data", "name": "Data Provider", "icon": "📊", "role": "Dataset Generation"},
     {"id": "builder", "name": "Web Builder", "icon": "🌐", "role": "Portal Creation"},
