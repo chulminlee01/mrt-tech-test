@@ -28,15 +28,15 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     if not nvidia_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
     
-    # Use Moonshot Kimi as default (fast, reliable, no timeouts)
-    nvidia_model = os.getenv("DEFAULT_MODEL", "moonshotai/kimi-k2-instruct-0905")
+    # Use DeepSeek as default per user request
+    nvidia_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
     nvidia_base = "https://integrate.api.nvidia.com/v1"
     
     print(f"   Using model: {nvidia_model}")
     
     # Warn if using slow models
-    if "deepseek" in nvidia_model.lower() or "minimax" in nvidia_model.lower():
-        print("   ⚠️  This model may cause timeouts. Consider moonshotai/kimi-k2-instruct-0905 for speed.")
+    if "deepseek" in nvidia_model.lower():
+        print("   ⚠️  Note: DeepSeek may be slower (30-60 sec per task) due to reasoning.")
     
     print(f"🚀 Creating NVIDIA LLM directly")
     print(f"   Model: {nvidia_model}")
