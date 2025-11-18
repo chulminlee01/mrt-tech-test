@@ -19,45 +19,64 @@ class LLMClientError(Exception):
 
 def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     """
-    Create NVIDIA LLM directly without going through any wrapper.
-    This bypasses LiteLLM completely to avoid provider parsing errors.
+    Create NVIDIA LLM with DeepSeek primary and Moonshot Kimi fallback.
     
-    Uses: deepseek-ai/deepseek-v3.1-terminus with thinking enabled
+    Tries:
+    1. deepseek-ai/deepseek-v3.1-terminus (high quality, may be slow)
+    2. moonshotai/kimi-k2-instruct-0905 (fast, reliable fallback)
     """
     nvidia_key = os.getenv("NVIDIA_API_KEY")
     if not nvidia_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
     
-    # Use DeepSeek as default per user request
-    nvidia_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
     nvidia_base = "https://integrate.api.nvidia.com/v1"
-    
-    print(f"   Using model: {nvidia_model}")
-    
-    # Warn if using slow models
-    if "deepseek" in nvidia_model.lower():
-        print("   ⚠️  Note: DeepSeek may be slower (30-60 sec per task) due to reasoning.")
-    
-    print(f"🚀 Creating NVIDIA LLM directly")
-    print(f"   Model: {nvidia_model}")
-    print(f"   Base URL: {nvidia_base}")
     
     # Set environment for OpenAI client library
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    print(f"   Request timeout: 180 seconds")
+    # Primary and fallback models
+    primary_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
+    fallback_model = "moonshotai/kimi-k2-instruct-0905"
     
-    # Simple approach: Just pass the model name and base_url
-    # The OpenAI Python client will handle the request to NVIDIA
-    return ChatOpenAI(
-        model=nvidia_model,
-        temperature=temperature,
-        base_url=nvidia_base,
-        api_key=nvidia_key,
-        request_timeout=180,
-        max_retries=3
-    )
+    print(f"🚀 Creating NVIDIA LLM")
+    print(f"   Primary model: {primary_model}")
+    print(f"   Fallback model: {fallback_model}")
+    print(f"   Base URL: {nvidia_base}")
+    
+    # Try primary model first (DeepSeek)
+    try:
+        print(f"   Attempting {primary_model}...")
+        llm = ChatOpenAI(
+            model=primary_model,
+            temperature=temperature,
+            base_url=nvidia_base,
+            api_key=nvidia_key,
+            request_timeout=120,  # 2 min timeout for DeepSeek
+            max_retries=2
+        )
+        
+        # Quick test to verify it works
+        test_response = llm.invoke("Respond with: OK")
+        print(f"   ✅ Using {primary_model} (primary)")
+        return llm
+        
+    except Exception as e:
+        error_type = type(e).__name__
+        print(f"   ⚠️  {primary_model} failed ({error_type})")
+        print(f"   🔄 Switching to fallback: {fallback_model}")
+        
+        # Use fallback model (Moonshot Kimi - fast and reliable)
+        llm = ChatOpenAI(
+            model=fallback_model,
+            temperature=temperature,
+            base_url=nvidia_base,
+            api_key=nvidia_key,
+            request_timeout=90,  # Faster timeout for Kimi
+            max_retries=3
+        )
+        print(f"   ✅ Using {fallback_model} (fallback, faster)")
+        return llm
 
 
 def _get_nvidia_headers() -> Dict[str, str]:
