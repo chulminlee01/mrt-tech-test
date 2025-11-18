@@ -13,7 +13,16 @@ from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 
-from agent_researcher import recent_google_search
+# Optional import - only needed if using Google Search
+try:
+    from agent_researcher import recent_google_search
+    GOOGLE_SEARCH_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Google Search not available (import error): {e}")
+    GOOGLE_SEARCH_AVAILABLE = False
+    def recent_google_search(query):
+        return "Google Search not available."
+
 from agent_data_provider import run_data_provider
 from agent_web_builder import run_web_builder
 from crewai.tools import BaseTool
