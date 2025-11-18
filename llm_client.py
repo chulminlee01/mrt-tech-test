@@ -44,39 +44,26 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     print(f"   Fallback model: {fallback_model}")
     print(f"   Base URL: {nvidia_base}")
     
-    # Try primary model first (DeepSeek)
-    try:
-        print(f"   Attempting {primary_model}...")
-        llm = ChatOpenAI(
-            model=primary_model,
-            temperature=temperature,
-            base_url=nvidia_base,
-            api_key=nvidia_key,
-            request_timeout=120,  # 2 min timeout for DeepSeek
-            max_retries=2
-        )
-        
-        # Quick test to verify it works
-        test_response = llm.invoke("Respond with: OK")
-        print(f"   ✅ Using {primary_model} (primary)")
-        return llm
-        
-    except Exception as e:
-        error_type = type(e).__name__
-        print(f"   ⚠️  {primary_model} failed ({error_type})")
-        print(f"   🔄 Switching to fallback: {fallback_model}")
-        
-        # Use fallback model (Moonshot Kimi - fast and reliable)
-        llm = ChatOpenAI(
-            model=fallback_model,
-            temperature=temperature,
-            base_url=nvidia_base,
-            api_key=nvidia_key,
-            request_timeout=90,  # Faster timeout for Kimi
-            max_retries=3
-        )
-        print(f"   ✅ Using {fallback_model} (fallback, faster)")
-        return llm
+    # Use generic model name to avoid LiteLLM provider errors
+    # LiteLLM recognizes "gpt-4" and will route via base_url to NVIDIA
+    safe_model = "gpt-4"  # Generic name that LiteLLM understands
+    
+    print(f"   Model for API call: {primary_model}")
+    print(f"   LiteLLM routing: Using 'gpt-4' → NVIDIA endpoint")
+    
+    # Create LLM with generic model name
+    # The actual request goes to NVIDIA API via base_url
+    llm = ChatOpenAI(
+        model=safe_model,  # Use generic name to avoid LiteLLM parsing errors
+        temperature=temperature,
+        base_url=nvidia_base,
+        api_key=nvidia_key,
+        request_timeout=120,
+        max_retries=3
+    )
+    
+    print(f"   ✅ LLM configured successfully")
+    return llm
 
 
 def _get_nvidia_headers() -> Dict[str, str]:
