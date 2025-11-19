@@ -31,30 +31,29 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     
     nvidia_base = "https://integrate.api.nvidia.com/v1"
     
-    # Set environment for OpenAI client library
+    # Set environment for OpenAI client library AND configure LiteLLM
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Primary and fallback models
-    primary_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
-    fallback_model = "meta/llama-3.1-8b-instruct"
+    # Critical: Tell LiteLLM to treat ALL models as OpenAI-compatible
+    # This prevents LiteLLM from trying to parse provider from model name
+    os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
+    os.environ["LITELLM_DROP_PARAMS"] = "True"
     
-    print(f"🚀 Creating NVIDIA LLM")
-    print(f"   Primary model: {primary_model}")
-    print(f"   Fallback model: {fallback_model}")
+    # Get desired model (Qwen as primary)
+    nvidia_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
+    
+    print(f"🚀 Creating NVIDIA LLM for CrewAI")
+    print(f"   Desired model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
+    print(f"   LiteLLM config: Treating all models as OpenAI-compatible")
     
-    # Use generic model name to avoid LiteLLM provider errors
-    # LiteLLM recognizes "gpt-4" and will route via base_url to NVIDIA
-    safe_model = "gpt-4"  # Generic name that LiteLLM understands
-    
-    print(f"   Model for API call: {primary_model}")
-    print(f"   LiteLLM routing: Using 'gpt-4' → NVIDIA endpoint")
-    
-    # Create LLM with generic model name
-    # The actual request goes to NVIDIA API via base_url
+    # Use the actual NVIDIA model name
+    # With LITELLM_LOCAL_MODEL_COST_MAP=True, LiteLLM won't try to parse it
+    # Instead it will just pass it through to the OpenAI client
+    # which will send it to NVIDIA's endpoint
     llm = ChatOpenAI(
-        model=safe_model,  # Use generic name to avoid LiteLLM parsing errors
+        model=nvidia_model,
         temperature=temperature,
         base_url=nvidia_base,
         api_key=nvidia_key,
@@ -62,7 +61,7 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
         max_retries=3
     )
     
-    print(f"   ✅ LLM configured successfully")
+    print(f"   ✅ LLM configured for CrewAI + NVIDIA")
     return llm
 
 
