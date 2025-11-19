@@ -50,15 +50,15 @@ Fill form and generate interactively!
 
 ```bash
 # NVIDIA API
-NVIDIA_API_KEY=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
+NVIDIA_API_KEY=
 NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 
 # Model (change as needed)
 DEFAULT_MODEL=deepseek-ai/deepseek-v3.1-terminus
 
 # Google Search (optional)
-GOOGLE_API_KEY=AIzaSyDjZgMKoZTwR1G14b0KGD5N5QXqy6EZL0c
-GOOGLE_CSE_ID=c2df9ceeedce6477d
+GOOGLE_API_KEY=
+GOOGLE_CSE_ID=
 
 # Settings
 DEEPSEEK_THINKING=false
