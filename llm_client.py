@@ -31,29 +31,28 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     
     nvidia_base = "https://integrate.api.nvidia.com/v1"
     
-    # Set environment for OpenAI client library AND configure LiteLLM
+    # Set environment for OpenAI client library
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Critical: Tell LiteLLM to treat ALL models as OpenAI-compatible
-    # This prevents LiteLLM from trying to parse provider from model name
-    os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
-    os.environ["LITELLM_DROP_PARAMS"] = "True"
-    
-    # Get desired model (Qwen as primary)
+    # Get desired model
     nvidia_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
     
     print(f"🚀 Creating NVIDIA LLM for CrewAI")
     print(f"   Desired model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
-    print(f"   LiteLLM config: Treating all models as OpenAI-compatible")
     
-    # Use the actual NVIDIA model name
-    # With LITELLM_LOCAL_MODEL_COST_MAP=True, LiteLLM won't try to parse it
-    # Instead it will just pass it through to the OpenAI client
-    # which will send it to NVIDIA's endpoint
+    # CRITICAL FIX: Use "openai_like/" prefix for LiteLLM
+    # This is LiteLLM's official way to use custom OpenAI-compatible endpoints
+    # Format: openai_like/<model_name>
+    litellm_model = f"openai_like/{nvidia_model}"
+    
+    print(f"   LiteLLM model format: {litellm_model}")
+    print(f"   This tells LiteLLM: Custom OpenAI-compatible endpoint")
+    
+    # Configure with openai_like prefix
     llm = ChatOpenAI(
-        model=nvidia_model,
+        model=litellm_model,  # Use openai_like/ prefix for LiteLLM
         temperature=temperature,
         base_url=nvidia_base,
         api_key=nvidia_key,
@@ -61,7 +60,7 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
         max_retries=3
     )
     
-    print(f"   ✅ LLM configured for CrewAI + NVIDIA")
+    print(f"   ✅ LLM configured for CrewAI with openai_like provider")
     return llm
 
 
