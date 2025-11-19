@@ -35,24 +35,18 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Get desired model
+    # Get desired model (Qwen as primary)
     nvidia_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
     
-    print(f"🚀 Creating NVIDIA LLM for CrewAI")
-    print(f"   Desired model: {nvidia_model}")
+    print(f"🚀 Creating NVIDIA LLM")
+    print(f"   Model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
+    print(f"   For: Simple Pipeline (bypasses LiteLLM)")
     
-    # CRITICAL FIX: Use "openai_like/" prefix for LiteLLM
-    # This is LiteLLM's official way to use custom OpenAI-compatible endpoints
-    # Format: openai_like/<model_name>
-    litellm_model = f"openai_like/{nvidia_model}"
-    
-    print(f"   LiteLLM model format: {litellm_model}")
-    print(f"   This tells LiteLLM: Custom OpenAI-compatible endpoint")
-    
-    # Configure with openai_like prefix
+    # Simple approach: Direct model name without any prefix
+    # This works for Simple Pipeline which doesn't use LiteLLM
     llm = ChatOpenAI(
-        model=litellm_model,  # Use openai_like/ prefix for LiteLLM
+        model=nvidia_model,
         temperature=temperature,
         base_url=nvidia_base,
         api_key=nvidia_key,
@@ -60,7 +54,7 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
         max_retries=3
     )
     
-    print(f"   ✅ LLM configured for CrewAI with openai_like provider")
+    print(f"   ✅ NVIDIA LLM ready")
     return llm
 
 
