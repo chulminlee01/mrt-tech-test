@@ -16,16 +16,13 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 # Suppress BrokenPipeError from CrewAI logging
 logging.getLogger().addHandler(logging.NullHandler())
 logging.captureWarnings(True)
+logging.raiseExceptions = False
 
 from crewai_working import generate_with_crewai
 from agent_starter_code import run_starter_code_generator
 from agent_web_designer import run_web_designer
 
 app = Flask(__name__)
-
-# Configure logging to suppress BrokenPipeError
-import warnings
-warnings.filterwarnings("ignore", category=BrokenPipeError)
 
 # Store generation status
 generation_status = {}
@@ -343,10 +340,12 @@ def index():
         }), 500
 
 
-@app.route("/test")
-def test_page():
-    """Test page to verify APIs with no cache."""
-    return """<!DOCTYPE html>
+def _serve_test_page():
+    """Utility to serve the cached-bypass diagnostics page."""
+    try:
+        return send_from_directory(".", "test_page.html")
+    except FileNotFoundError:
+        return """<!DOCTYPE html>
 <html><head><title>API Test</title>
 <meta http-equiv="Cache-Control" content="no-cache">
 <style>body{font-family:Arial;padding:20px;background:#f5f5f5}
@@ -363,6 +362,18 @@ h+=`<div class="result error">❌ ${t.n}: ${e.message}</div>`;}}
 r.innerHTML=h+'<h2 style="color:green">🎉 APIs Working!</h2><a href="/" style="font-size:20px">Go to Main App →</a>';}
 test();
 </script></body></html>"""
+
+
+@app.route("/test")
+def test_page():
+    """Shortlink for diagnostics page."""
+    return _serve_test_page()
+
+
+@app.route("/test_page.html")
+def test_page_legacy():
+    """Legacy path expected by previous instructions."""
+    return _serve_test_page()
 
 
 @app.route("/health")

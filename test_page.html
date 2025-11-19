@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MRT Tech Test - Fresh Load</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+    <h1>Testing App Connection</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test all API endpoints
+        async function testAPIs() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing...</p>';
+            
+            const tests = [
+                {name: 'Version', url: '/api/version'},
+                {name: 'Agents', url: '/api/agents'},
+                {name: 'Test LLM', url: '/api/test-llm'}
+            ];
+            
+            let html = '';
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url);
+                    const data = await response.json();
+                    html += `<p style="color: green;">✅ ${test.name}: ${JSON.stringify(data).substring(0, 100)}...</p>`;
+                } catch (error) {
+                    html += `<p style="color: red;">❌ ${test.name}: ${error.message}</p>`;
+                }
+            }
+            
+            results.innerHTML = html;
+            
+            if (!html.includes('❌')) {
+                results.innerHTML += '<h2 style="color: green;">✅ All APIs Working!</h2>';
+                results.innerHTML += '<p><a href="/" style="font-size: 20px; color: blue;">Click here to go to main app</a></p>';
+            }
+        }
+        
+        testAPIs();
+    </script>
+</body>
+</html>
+
