@@ -75,37 +75,64 @@ class LogCapture(io.StringIO):
         # Update timestamp to show activity
         generation_status[self.job_id]['last_update'] = datetime.now().isoformat()
         
-        # Detect which phase we're in based on logs
-        if 'task 1' in text_lower or ('agent started' in text_lower and 'product manager' in text_lower):
+        # Detect which phase we're in based on logs and update agent status
+        agent_status = generation_status[self.job_id].get('agent_status', {})
+        
+        # PM phases
+        if '[pm]' in text_lower and ('kick' in text_lower or 'project' in text_lower):
             generation_status[self.job_id]['progress'] = '👔 PM initializing project...'
             generation_status[self.job_id]['active_agent'] = 'pm'
-        elif 'task 2' in text_lower or ('agent started' in text_lower and 'research' in text_lower):
+            agent_status['pm'] = 'active'
+        elif '[pm]' in text_lower and 'aligning' in text_lower:
+            generation_status[self.job_id]['progress'] = '💬 PM aligning on skills...'
+            generation_status[self.job_id]['active_agent'] = 'pm'
+            agent_status['pm'] = 'active'
+        elif '[pm]' in text_lower and 'final approval' in text_lower:
+            generation_status[self.job_id]['progress'] = '👔 PM giving final approval...'
+            generation_status[self.job_id]['active_agent'] = 'pm'
+            agent_status['pm'] = 'completed'
+        
+        # Research Analyst
+        elif '[research' in text_lower:
             generation_status[self.job_id]['progress'] = '🔍 Research Analyst investigating...'
             generation_status[self.job_id]['active_agent'] = 'researcher'
-        elif 'task 3' in text_lower or 'discussion' in text_lower or 'consensus' in text_lower:
-            generation_status[self.job_id]['progress'] = '💬 Team discussion in progress...'
-            generation_status[self.job_id]['active_agent'] = 'pm'
-        elif 'task 4' in text_lower or ('agent started' in text_lower and 'designer' in text_lower):
-            generation_status[self.job_id]['progress'] = '✏️ Designer creating assignments...'
-            generation_status[self.job_id]['active_agent'] = 'designer'
-        elif 'task 5' in text_lower or ('agent started' in text_lower and 'reviewer' in text_lower):
-            generation_status[self.job_id]['progress'] = '🔎 QA reviewing assignments...'
-            generation_status[self.job_id]['active_agent'] = 'reviewer'
-        elif 'task 6' in text_lower or 'final decision' in text_lower or 'decision: approved' in text_lower:
-            generation_status[self.job_id]['progress'] = '👔 PM final approval...'
-            generation_status[self.job_id]['active_agent'] = 'pm'
-        elif 'generating structured assignments' in text_lower:
-            generation_status[self.job_id]['progress'] = '📝 Generating detailed assignments...'
-            generation_status[self.job_id]['active_agent'] = 'designer'
-        elif 'generating datasets' in text_lower:
-            generation_status[self.job_id]['progress'] = '📊 Creating datasets...'
+            agent_status['researcher'] = 'active'
+        elif 'research summary saved' in text_lower:
+            agent_status['researcher'] = 'completed'
+        
+        # Data Provider  
+        elif '[data provider]' in text_lower or 'creating datasets' in text_lower:
+            generation_status[self.job_id]['progress'] = '📊 Data Provider creating datasets...'
             generation_status[self.job_id]['active_agent'] = 'data'
-        elif 'building web portal' in text_lower:
-            generation_status[self.job_id]['progress'] = '🌐 Building web portal...'
+            agent_status['data'] = 'active'
+        elif 'datasets created' in text_lower:
+            agent_status['data'] = 'completed'
+        
+        # Web Builder
+        elif '[web builder]' in text_lower or 'building candidate portal' in text_lower:
+            generation_status[self.job_id]['progress'] = '🌐 Web Builder creating portal...'
             generation_status[self.job_id]['active_agent'] = 'builder'
-        elif 'applying custom styling' in text_lower or 'web designer' in text_lower:
-            generation_status[self.job_id]['progress'] = '🎨 Applying custom styling...'
+            agent_status['builder'] = 'active'
+        elif 'portal built' in text_lower:
+            agent_status['builder'] = 'completed'
+        
+        # Web Designer
+        elif '[web designer]' in text_lower or 'applying myrealtrip branding' in text_lower:
+            generation_status[self.job_id]['progress'] = '🎨 Web Designer styling portal...'
             generation_status[self.job_id]['active_agent'] = 'styler'
+            agent_status['styler'] = 'active'
+        elif 'styling applied' in text_lower:
+            agent_status['styler'] = 'completed'
+        
+        # QA Reviewer
+        elif '[qa' in text_lower or 'final review' in text_lower:
+            generation_status[self.job_id]['progress'] = '🔎 QA reviewing deliverables...'
+            generation_status[self.job_id]['active_agent'] = 'reviewer'
+            agent_status['reviewer'] = 'active'
+        
+        # Update agent_status in generation_status
+        if agent_status:
+            generation_status[self.job_id]['agent_status'] = agent_status
     
     def flush(self):
         pass
