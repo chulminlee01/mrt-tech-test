@@ -343,6 +343,28 @@ def index():
         }), 500
 
 
+@app.route("/test")
+def test_page():
+    """Test page to verify APIs with no cache."""
+    return """<!DOCTYPE html>
+<html><head><title>API Test</title>
+<meta http-equiv="Cache-Control" content="no-cache">
+<style>body{font-family:Arial;padding:20px;background:#f5f5f5}
+.result{padding:10px;margin:10px 0;border-radius:5px}
+.success{background:#d4edda;color:#155724}
+.error{background:#f8d7da;color:#721c24}</style></head>
+<body><h1>🧪 API Test</h1><div id="results">Testing...</div>
+<script>
+async function test(){const r=document.getElementById('results');
+const tests=[{n:'Version',u:'/api/version'},{n:'Agents',u:'/api/agents'},{n:'LLM',u:'/api/test-llm'}];
+let h='';for(const t of tests){try{const res=await fetch(t.u);const d=await res.json();
+h+=`<div class="result success">✅ ${t.n}: Working</div>`;}catch(e){
+h+=`<div class="result error">❌ ${t.n}: ${e.message}</div>`;}}
+r.innerHTML=h+'<h2 style="color:green">🎉 APIs Working!</h2><a href="/" style="font-size:20px">Go to Main App →</a>';}
+test();
+</script></body></html>"""
+
+
 @app.route("/health")
 def health():
     """Health check endpoint."""
