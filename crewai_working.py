@@ -472,13 +472,21 @@ def generate_with_crewai(
 ) -> Dict:
     """Generate tech test using simple pipeline (default) or legacy CrewAI."""
     
-    # Create output directory
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_role = job_role.lower().replace(" ", "_")
-    safe_level = job_level.lower().replace(" ", "_")
+    # Check if output_root is already a specific job directory
+    output_root_path = Path(output_root)
     
-    output_dir = Path(output_root) / f"{safe_role}_{safe_level}_{timestamp}"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # If output_root contains timestamp pattern, use it directly to avoid nesting
+    if output_root_path.name and '_' in output_root_path.name and len([c for c in output_root_path.name if c.isdigit()]) > 8:
+        # Already a job directory (has timestamp), use directly
+        output_dir = output_root_path
+        output_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        # Generic output root, create new timestamped directory
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_role = job_role.lower().replace(" ", "_")
+        safe_level = job_level.lower().replace(" ", "_")
+        output_dir = output_root_path / f"{safe_role}_{safe_level}_{timestamp}"
+        output_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"📁 Output: {output_dir}")
     print()
