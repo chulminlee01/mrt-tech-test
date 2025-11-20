@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 
 # Optional import - only needed if using Google Search
 try:
-    from agent_researcher import recent_google_search
+from agent_researcher import recent_google_search
     GOOGLE_SEARCH_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Google Search not available (import error): {e}")
@@ -61,9 +61,9 @@ class GoogleCSETool(BaseTool):
         
         print(f"\n🔍 [Research Analyst] Executing Google CSE search: '{query[:60]}...'\n", flush=True)
         try:
-            result = recent_google_search(query)
-            print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
-            return result
+        result = recent_google_search(query)
+        print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
+        return result
         except Exception as e:
             print(f"\n⚠️  [Research Analyst] Search failed: {e}\n", flush=True)
             return f"Search failed. Using general knowledge about {query}."
@@ -268,30 +268,30 @@ def _run_crewai_classic(
     
     print("\n📝 Phase 2: Generating Assets based on Crew Plan")
     
-    from agent_question_generator import run_question_generator
-    run_question_generator(
-        job_role=job_role,
-        job_level=job_level,
+        from agent_question_generator import run_question_generator
+        run_question_generator(
+            job_role=job_role,
+            job_level=job_level,
         company_name="Myrealtrip OTA",
-        input_path=CURRENT_RESEARCH_PATH,
-        output_path=CURRENT_ASSIGNMENTS_PATH,
-        language=language
-    )
+            input_path=CURRENT_RESEARCH_PATH,
+            output_path=CURRENT_ASSIGNMENTS_PATH,
+            language=language
+        )
     
     datasets_dir = str(output_dir / "datasets")
-    run_data_provider(
-        assignments_path=CURRENT_ASSIGNMENTS_PATH,
+            run_data_provider(
+                assignments_path=CURRENT_ASSIGNMENTS_PATH,
         output_dir=datasets_dir,
-        language=language
-    )
-    
-    run_web_builder(
-        assignments_path=CURRENT_ASSIGNMENTS_PATH,
-        research_summary_path=CURRENT_RESEARCH_PATH,
-        output_html=str(output_dir / "index.html"),
-        language=language,
-        starter_dir=str(output_dir / "starter_code")
-    )
+                language=language
+            )
+        
+            run_web_builder(
+                assignments_path=CURRENT_ASSIGNMENTS_PATH,
+                research_summary_path=CURRENT_RESEARCH_PATH,
+                output_html=str(output_dir / "index.html"),
+                language=language,
+                starter_dir=str(output_dir / "starter_code")
+            )
     
     return {
         "status": "completed",
@@ -353,6 +353,22 @@ Include sections:
     research_summary = _call_llm_text(llm, research_prompt)
     research_path.write_text(research_summary, encoding="utf-8")
     _log("✅ Research summary saved.")
+    _log("🔍 [Research Analyst] Research findings shared with the crew:")
+    summary_lines = [
+        line.strip("•- \t")
+        for line in research_summary.splitlines()
+    ]
+    displayed = 0
+    for line in summary_lines:
+        clean = line.strip()
+        if not clean:
+            continue
+        _log(f"🔍 [Research Analyst] {clean}")
+        displayed += 1
+        if displayed >= 12:
+            break
+    if displayed < len([l for l in summary_lines if l.strip()]):
+        _log("🔍 [Research Analyst] …additional research insights recorded in research_report.txt.")
     
     # Skill focus with team discussion simulation
     _log("💬 [PM] Aligning on skill focus areas with team...")
@@ -482,11 +498,11 @@ def generate_with_crewai(
         output_dir.mkdir(parents=True, exist_ok=True)
     else:
         # Generic output root, create new timestamped directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_role = job_role.lower().replace(" ", "_")
-        safe_level = job_level.lower().replace(" ", "_")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_role = job_role.lower().replace(" ", "_")
+    safe_level = job_level.lower().replace(" ", "_")
         output_dir = output_root_path / f"{safe_role}_{safe_level}_{timestamp}"
-        output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     print(f"📁 Output: {output_dir}")
     print()
