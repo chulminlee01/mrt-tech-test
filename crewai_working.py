@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 
 # Optional import - only needed if using Google Search
 try:
-from agent_researcher import recent_google_search
+    from agent_researcher import recent_google_search
     GOOGLE_SEARCH_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Google Search not available (import error): {e}")
