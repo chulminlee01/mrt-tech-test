@@ -31,6 +31,7 @@ generation_status = {}
 AGENTS = [
     {"id": "pm", "name": "Product Manager", "icon": "👔", "role": "Team Leader & Coordinator"},
     {"id": "researcher", "name": "Research Analyst", "icon": "🔍", "role": "Industry Research"},
+    {"id": "designer", "name": "Assignment Generator", "icon": "✏️", "role": "Challenge Creation"},
     {"id": "reviewer", "name": "QA Reviewer", "icon": "🔎", "role": "Quality Assurance"},
     {"id": "data", "name": "Data Provider", "icon": "📊", "role": "Dataset Generation"},
     {"id": "builder", "name": "Web Builder", "icon": "🌐", "role": "Portal Creation"},
@@ -100,6 +101,14 @@ class LogCapture(io.StringIO):
         elif 'research summary saved' in text_lower:
             set_progress('✅ Research summary shared with PM...', 'pm')
             agent_status['researcher'] = 'completed'
+        
+        # Assignment Generator / Designer
+        elif '[designer' in text_lower or 'assignment generator' in text_lower or 'generating detailed assignments' in text_lower:
+            set_progress('📝 Assignment Generator crafting challenges...', 'designer')
+            agent_status['designer'] = 'active'
+        elif 'assignments generated' in text_lower or 'assignments ready' in text_lower:
+            set_progress('✅ Assignments ready. Data Provider preparing datasets...')
+            agent_status['designer'] = 'completed'
         
         # Data Provider  
         elif '[data provider]' in text_lower or 'creating datasets' in text_lower:

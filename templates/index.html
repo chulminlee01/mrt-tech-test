@@ -1382,12 +1382,23 @@
     const timelineRoles = [
       { id: 'pm', label: 'Product Manager', icon: '👔', keywords: ['[pm]', 'product manager'] },
       { id: 'researcher', label: 'Research Analyst', icon: '🔍', keywords: ['[research', 'research analyst'] },
-      { id: 'designer', label: 'Assignment Designer', icon: '✏️', keywords: ['[designer', 'assignment designer'] },
+      { 
+        id: 'designer', 
+        label: 'Assignment Generator', 
+        icon: '✏️', 
+        keywords: [
+          '[designer', 
+          'assignment designer', 
+          'assignment generator', 
+          'generating assignments', 
+          'generating detailed assignments', 
+          'assignments generated'
+        ] 
+      },
       { id: 'data', label: 'Data Provider', icon: '📊', keywords: ['[data provider]', 'data provider', 'dataset'] },
       { id: 'builder', label: 'Web Builder', icon: '🌐', keywords: ['[web builder]', 'web builder', 'portal'] },
       { id: 'styler', label: 'Web Designer', icon: '🎨', keywords: ['[web designer]', 'styling', 'branding'] },
-      { id: 'qa', label: 'QA Reviewer', icon: '🔎', keywords: ['[qa', 'qa reviewer', 'approved'] },
-      { id: 'assignments', label: 'Assignment Generator', icon: '📝', keywords: ['generating assignments', 'assignments generated'] }
+      { id: 'qa', label: 'QA Reviewer', icon: '🔎', keywords: ['[qa', 'qa reviewer', 'approved'] }
     ];
     let activeAgentId = null;
     const timelineModal = document.getElementById('timelineModal');
@@ -1398,7 +1409,7 @@
     const agents = [
       {id: "pm", name: "Product Manager", icon: "👔", role: "Team Leader & Coordinator"},
       {id: "researcher", name: "Research Analyst", icon: "🔍", role: "Industry Research"},
-      {id: "designer", name: "Assignment Designer", icon: "✏️", role: "Question Creation"},
+      {id: "designer", name: "Assignment Generator", icon: "✏️", role: "Challenge Creation"},
       {id: "reviewer", name: "QA Reviewer", icon: "🔎", role: "Quality Assurance"},
       {id: "data", name: "Data Provider", icon: "📊", role: "Dataset Generation"},
       {id: "builder", name: "Web Builder", icon: "🌐", role: "Portal Creation"},
@@ -1496,8 +1507,14 @@
       if (recentLogs.includes('research analyst') || recentLogs.includes('searching google cse') || 
           recentLogs.includes('google_cse_search')) {
         return 'researcher';
-      } else if (recentLogs.includes('assignment designer') || recentLogs.includes('generating assignments') ||
-                 recentLogs.includes('creating assignment')) {
+      } else if (
+        recentLogs.includes('assignment designer') ||
+        recentLogs.includes('assignment generator') ||
+        recentLogs.includes('generating assignments') ||
+        recentLogs.includes('generating detailed assignments') ||
+        recentLogs.includes('assignments generated') ||
+        recentLogs.includes('creating assignment')
+      ) {
         return 'designer';
       } else if (recentLogs.includes('qa reviewer') || recentLogs.includes('reviewing quality')) {
         return 'reviewer';
@@ -1691,11 +1708,20 @@
       
       // Update active agent for timeline indicator
       const activeAgent = detectActiveAgent(logs);
-      agents.forEach(agent => {
-        if (agent.id === activeAgent) {
-          updateAgentStatus(agent.id, 'active');
+      if (activeAgent) {
+        if (activeAgentId !== activeAgent) {
+          activeAgentId = activeAgent;
+          renderTimeline();
+          if (timelineModal && timelineModal.classList.contains('visible')) {
+            renderTimelineModal();
+          }
         }
-      });
+        agents.forEach(agent => {
+          if (agent.id === activeAgent) {
+            updateAgentStatus(agent.id, 'active');
+          }
+        });
+      }
       
       // Show discussion phase if detected
       showDiscussionPhase(logs);
@@ -1755,7 +1781,6 @@
         message.textContent = status.progress || 'Successfully generated all assets including research, assignments, datasets, starter code, and portal.';
         progressBar.style.width = '100%';
         subtitle.textContent = '🎉 Portal approved and ready for candidates!';
-        actions.style.display = 'block';
         
         // Mark all agents as completed
         agents.forEach(agent => {
@@ -1774,10 +1799,18 @@
           }
         }
         if (portalLink) {
+          if (typeof window !== 'undefined' && portalLink.startsWith('/')) {
+            const origin = window.location.origin.replace(/\/$/, '');
+            portalLink = `${origin}${portalLink}`;
+          }
           resultLink.href = portalLink;
-          resultLink.textContent = '📄 Open Generated Tech Test';
+          resultLink.textContent = status.portal_ready
+            ? '📄 Open Generated Tech Test'
+            : '📁 View Generated Assets';
+          actions.style.display = 'block';
         } else {
           actions.style.display = 'none';
+          resultLink.removeAttribute('href');
         }
         if (discussionPhase) {
           discussionPhase.classList.add('completed');
