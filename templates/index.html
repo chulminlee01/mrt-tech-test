@@ -1000,7 +1000,6 @@
     }
 
     .long-task-banner {
-      display: none;
       margin: 1rem 0 1.5rem;
       padding: 1rem 1.25rem;
       border-radius: 14px;
@@ -1009,7 +1008,7 @@
       color: #bbf7d0;
       font-size: 0.9rem;
       box-shadow: 0 15px 38px rgba(6, 78, 59, 0.45);
-      display: flex;
+      display: none;
       align-items: center;
       gap: 0.75rem;
     }
@@ -1031,6 +1030,47 @@
       to {
         transform: rotate(360deg);
       }
+    }
+
+    .agent-focus {
+      display: none;
+      margin: 1rem 0 2rem;
+      padding: 1.2rem 1.5rem;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12));
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.4);
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .agent-focus.active {
+      display: flex;
+    }
+
+    .agent-focus-icon {
+      font-size: 2.2rem;
+      width: 3.25rem;
+      height: 3.25rem;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.45);
+    }
+
+    .agent-focus-label {
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+      color: #bfdbfe;
+      font-weight: 600;
+    }
+
+    .agent-focus-text {
+      margin-top: 0.15rem;
+      font-size: 0.9rem;
+      color: #e0f2fe;
     }
 
     .timeline-modal {
@@ -1375,6 +1415,14 @@
         </div>
       </div>
       
+      <div class="agent-focus" id="agentFocus">
+        <div class="agent-focus-icon" id="agentFocusIcon">🤖</div>
+        <div>
+          <div class="agent-focus-label" id="agentFocusLabel">Waiting for crew activity…</div>
+          <div class="agent-focus-text" id="agentFocusText">Agents will appear here while they are thinking.</div>
+        </div>
+      </div>
+
       <div class="long-task-banner" id="longTaskBanner">
         <div class="long-task-spinner"></div>
         <div id="longTaskText">Finalizing deliverables. This may take a minute…</div>
@@ -1463,6 +1511,10 @@
     const discussionTitleText = document.getElementById('discussionTitleText');
     const longTaskBanner = document.getElementById('longTaskBanner');
     const longTaskText = document.getElementById('longTaskText');
+    const agentFocus = document.getElementById('agentFocus');
+    const agentFocusIcon = document.getElementById('agentFocusIcon');
+    const agentFocusLabel = document.getElementById('agentFocusLabel');
+    const agentFocusText = document.getElementById('agentFocusText');
     
     // Agent definitions (7 agents: 4 CrewAI + 3 post-processing)
     const agents = [
@@ -1474,6 +1526,36 @@
       {id: "builder", name: "Web Builder", icon: "🌐", role: "Portal Creation"},
       {id: "styler", name: "Web Designer", icon: "🎨", role: "Styling & Design"}
     ];
+    const agentFocusMessages = {
+      pm: {
+        label: "PM coordinating next steps",
+        text: "PM is steering team approvals and making decisions."
+      },
+      researcher: {
+        label: "Research Analyst investigating",
+        text: "Collecting best practices and industry signals."
+      },
+      designer: {
+        label: "Assignment Generator crafting scenarios",
+        text: "Designing realistic multi-step challenges. This step can take up to a minute."
+      },
+      reviewer: {
+        label: "QA Reviewer validating outputs",
+        text: "Double-checking that every deliverable meets expectations."
+      },
+      data: {
+        label: "Data Provider building datasets",
+        text: "Synthesizing OTA-friendly datasets for the assignment."
+      },
+      builder: {
+        label: "Web Builder assembling portal",
+        text: "Packing assignments and resources into a clean candidate portal."
+      },
+      styler: {
+        label: "Web Designer polishing UI",
+        text: "Applying Myrealtrip styling and layout refinements."
+      }
+    };
 
     // Form submission
     document.getElementById('generateForm').addEventListener('submit', async (e) => {
@@ -1578,10 +1660,45 @@
       }
       
       activeAgentId = agentId || null;
+      updateAgentFocus(activeAgentId);
       renderTimeline();
       if (timelineModal && timelineModal.classList.contains('visible')) {
         renderTimelineModal();
       }
+    }
+
+    function updateAgentFocus(agentId, progressText = '') {
+      if (!agentFocus || !agentFocusIcon || !agentFocusLabel || !agentFocusText) return;
+      if (!agentId) {
+        agentFocus.classList.remove('active');
+        agentFocusIcon.textContent = '🤖';
+        agentFocusLabel.textContent = 'Waiting for crew activity…';
+        agentFocusText.textContent = 'Agents will appear here while they are thinking.';
+        return;
+      }
+
+      const agentInfo = agents.find(a => a.id === agentId);
+      if (!agentInfo) return;
+
+      const focusData = agentFocusMessages[agentId] || {
+        label: `${agentInfo.name} in progress`,
+        text: 'This agent is actively working on their task.'
+      };
+
+      agentFocus.classList.add('active');
+      agentFocusIcon.textContent = agentInfo.icon;
+      agentFocusLabel.textContent = focusData.label;
+
+      let detail = focusData.text;
+      if (progressText) {
+        const lower = progressText.toLowerCase();
+        const nameToken = agentInfo.name.split(' ')[0].toLowerCase();
+        const roleToken = (agentInfo.role || '').split(' ')[0].toLowerCase();
+        if (lower.includes(nameToken) || lower.includes(roleToken) || lower.includes(agentId)) {
+          detail = progressText;
+        }
+      }
+      agentFocusText.textContent = detail;
     }
 
     
@@ -1678,6 +1795,7 @@
       renderTimeline();
       renderTimelineModal();
       hideLongTaskBanner();
+      updateAgentFocus(null);
 
       const discussionPhase = document.getElementById('discussionPhase');
       if (discussionPhase) {
@@ -1947,6 +2065,7 @@
       }
       
       setActiveAgent(status.active_agent || null, 'status');
+      updateAgentFocus(status.active_agent || activeAgentId, status.progress || '');
     }
 
     async function loadRecentJobs() {
@@ -2168,13 +2287,15 @@
       'finalizing datasets',
       'generating starter code bundle',
       'applying custom portal styling',
-      'finalizing deliverables'
+      'finalizing deliverables',
+      'assignment generator is crafting'
     ];
     const LONG_TASK_END = [
       'starter code package ready',
       'styling refinements applied',
       'final assets ready',
-      'portal ready for candidates'
+      'portal ready for candidates',
+      'assignments generated'
     ];
 
     function updateLongTaskBanner(newLogs) {

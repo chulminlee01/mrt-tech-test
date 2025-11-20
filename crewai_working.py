@@ -268,8 +268,10 @@ def _run_crewai_classic(
     # based on the Crew's plan.
     
     print("\n📝 Phase 2: Generating Assets based on Crew Plan")
-
+    
     from agent_question_generator import run_question_generator
+    _log("📝 Generating detailed assignments...")
+    _log("🕒 [System] Assignment Generator is crafting scenario variations. This stage can take up to 60 seconds—thanks for waiting.")
     run_question_generator(
         job_role=job_role,
         job_level=job_level,
@@ -278,14 +280,14 @@ def _run_crewai_classic(
         output_path=CURRENT_ASSIGNMENTS_PATH,
         language=language
     )
-
+    
     datasets_dir = str(output_dir / "datasets")
     run_data_provider(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         output_dir=datasets_dir,
         language=language
     )
-
+    
     run_web_builder(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         research_summary_path=CURRENT_RESEARCH_PATH,
@@ -471,6 +473,7 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
     
     assignments_path = output_dir / "assignments.json"
     _log("📝 Generating detailed assignments...")
+    _log("🕒 [System] Assignment Generator is crafting scenario variations. This stage can take up to 60 seconds—thanks for waiting.")
     run_question_generator(
         job_role=job_role,
         job_level=job_level,
