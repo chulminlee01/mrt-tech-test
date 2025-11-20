@@ -982,6 +982,22 @@
       font-style: italic;
       color: #f1f5f9;
     }
+    
+    .timeline-tool-badge {
+      margin-top: 0.45rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      width: fit-content;
+      padding: 0.2rem 0.65rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      background: rgba(16, 185, 129, 0.12);
+      color: #6ee7b7;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
 
     .timeline-modal {
       display: none;
@@ -1994,6 +2010,7 @@
       const message = formatTimelineMessage(log);
       if (!message) return null;
       const detail = formatTimelineDetail(log);
+      const toolName = /google\s+cse|google_cse|google search tool/i.test(normalized) ? 'Google CSE' : null;
       return {
         icon: roleMatch.icon,
         role: roleMatch.label,
@@ -2001,7 +2018,8 @@
         message,
         detail: detail === message ? '' : detail,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: 'chat'
+        type: 'chat',
+        toolName
       };
     }
 
@@ -2093,6 +2111,8 @@
           <div class="timeline-body">
             <div class="timeline-role-label">[${entry.role}]${entry.time ? ` · <span class="timeline-time">${entry.time}</span>` : ''}</div>
             <div class="timeline-text">${entry.message}</div>
+            ${entry.toolName ? `<div class="timeline-tool-badge">🔧 Tool · ${entry.toolName}</div>` : ''}
+            ${entry.detail ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
             ${isActive ? `<div class="timeline-thinking">thinking<span></span><span></span><span></span></div>` : ''}
           </div>
         </div>

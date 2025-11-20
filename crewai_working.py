@@ -268,7 +268,7 @@ def _run_crewai_classic(
     # based on the Crew's plan.
     
     print("\n📝 Phase 2: Generating Assets based on Crew Plan")
-    
+
     from agent_question_generator import run_question_generator
     run_question_generator(
         job_role=job_role,
@@ -278,14 +278,14 @@ def _run_crewai_classic(
         output_path=CURRENT_ASSIGNMENTS_PATH,
         language=language
     )
-    
+
     datasets_dir = str(output_dir / "datasets")
     run_data_provider(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         output_dir=datasets_dir,
         language=language
     )
-    
+
     run_web_builder(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         research_summary_path=CURRENT_RESEARCH_PATH,
@@ -293,7 +293,7 @@ def _run_crewai_classic(
         language=language,
         starter_dir=str(output_dir / "starter_code")
     )
-    
+
     return {
         "status": "completed",
         "result": discussion_text,
@@ -319,6 +319,48 @@ def _call_llm_text(llm, prompt: str) -> str:
     return str(response)
 
 
+def _google_cse_available() -> bool:
+    """Return True if Google CSE credentials and tool import are ready."""
+    return (
+        GOOGLE_SEARCH_AVAILABLE
+        and os.getenv("GOOGLE_API_KEY")
+        and os.getenv("GOOGLE_CSE_ID")
+    )
+
+
+def _fetch_google_cse_insights(job_role: str, job_level: str) -> Optional[str]:
+    """Run Google CSE and return formatted insights, logging progress for the UI."""
+    if not _google_cse_available():
+        _log("⚠️ [Research Analyst] Google CSE tool unavailable (set GOOGLE_API_KEY & GOOGLE_CSE_ID).")
+        return None
+    
+    query = (
+        f"{job_level} {job_role} OTA take-home assignment expectations months:6 num:5 "
+        "evaluation criteria accessibility performance"
+    )
+    _log(f"🌐 [Research Analyst] Launching Google CSE tool… (query: \"{query[:96]}…\")")
+    
+    try:
+        cse_results = recent_google_search(query)
+    except Exception as exc:
+        _log(f"⚠️ [Research Analyst] Google CSE tool error: {exc}")
+        return None
+    
+    lines = [line.strip() for line in cse_results.splitlines() if line.strip()]
+    if not lines:
+        _log("⚠️ [Research Analyst] Google CSE returned no structured results.")
+        return None
+    
+    _log("🌐 [Research Analyst] Google CSE findings (preview):")
+    preview = lines[:6]
+    for snippet in preview:
+        _log(f"🌐 [Research Analyst] {snippet}")
+    if len(lines) > len(preview):
+        _log(f"🌐 [Research Analyst] …plus {len(lines) - len(preview)} more lines saved to context.")
+    
+    return cse_results
+
+
 def _run_simple_pipeline(
     job_role: str,
     job_level: str,
@@ -341,6 +383,9 @@ def _run_simple_pipeline(
     
     # Research summary
     _log("🔍 [Research Analyst] Investigating best practices...")
+    cse_insights = _fetch_google_cse_insights(job_role, job_level)
+    if cse_insights:
+        _log("🌐 [Research Analyst] Incorporating Google CSE findings into research summary.")
     research_prompt = f"""
 You are a research analyst specializing in OTA (Online Travel Agency) hiring.
 Provide a concise summary (8-10 bullet points) for designing take-home tests targeting {job_level} {job_role}.
@@ -351,6 +396,10 @@ Include sections:
 **Evaluation Criteria**
 **Recommendations for Myrealtrip**
 """
+    if cse_insights:
+        research_prompt += "\nUse these live Google CSE findings as cited evidence:\n"
+        research_prompt += cse_insights
+        research_prompt += "\n"
     research_summary = _call_llm_text(llm, research_prompt)
     research_path.write_text(research_summary, encoding="utf-8")
     _log("✅ Research summary saved.")
@@ -504,7 +553,6 @@ def generate_with_crewai(
         safe_level = job_level.lower().replace(" ", "_")
         output_dir = output_root_path / f"{safe_role}_{safe_level}_{timestamp}"
         output_dir.mkdir(parents=True, exist_ok=True)
-    
     print(f"📁 Output: {output_dir}")
     print()
     
