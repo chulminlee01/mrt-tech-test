@@ -999,6 +999,40 @@
       letter-spacing: 0.2px;
     }
 
+    .long-task-banner {
+      display: none;
+      margin: 1rem 0 1.5rem;
+      padding: 1rem 1.25rem;
+      border-radius: 14px;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: rgba(5, 46, 22, 0.75);
+      color: #bbf7d0;
+      font-size: 0.9rem;
+      box-shadow: 0 15px 38px rgba(6, 78, 59, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .long-task-banner.visible {
+      display: flex;
+    }
+
+    .long-task-spinner {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 9999px;
+      border: 2px solid rgba(134, 239, 172, 0.4);
+      border-top-color: #34d399;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .timeline-modal {
       display: none;
       position: fixed;
@@ -1341,6 +1375,11 @@
         </div>
       </div>
       
+      <div class="long-task-banner" id="longTaskBanner">
+        <div class="long-task-spinner"></div>
+        <div id="longTaskText">Finalizing deliverables. This may take a minute…</div>
+        </div>
+      
       <div class="timeline-modal" id="timelineModal">
         <div class="timeline-modal-content">
           <div class="timeline-modal-header">
@@ -1417,10 +1456,13 @@
       { id: 'qa', label: 'QA Reviewer', icon: '🔎', keywords: ['[qa', 'qa reviewer', 'approved'] }
     ];
     let activeAgentId = null;
+    let longTaskActive = false;
     let backendActiveAgentId = null;
     const timelineModal = document.getElementById('timelineModal');
     const timelineModalBody = document.getElementById('timelineModalBody');
     const discussionTitleText = document.getElementById('discussionTitleText');
+    const longTaskBanner = document.getElementById('longTaskBanner');
+    const longTaskText = document.getElementById('longTaskText');
     
     // Agent definitions (7 agents: 4 CrewAI + 3 post-processing)
     const agents = [
@@ -1635,6 +1677,7 @@
       timelineEntries = [];
       renderTimeline();
       renderTimelineModal();
+      hideLongTaskBanner();
 
       const discussionPhase = document.getElementById('discussionPhase');
       if (discussionPhase) {
@@ -1767,6 +1810,7 @@
       // Auto-scroll to bottom
       container.scrollTop = container.scrollHeight;
       updateTimelineEntries(newLogLines);
+      updateLongTaskBanner(newLogLines);
       
       // Update active agent for timeline indicator (fallback if backend hasn't updated yet)
       const activeAgent = detectActiveAgent(logs);
@@ -1832,6 +1876,7 @@
           discussionContent.textContent = status.progress || 'Agents are collaborating and reviewing outputs...';
         }
       } else if (status.status === 'completed') {
+        hideLongTaskBanner();
         ensureDiscussionPhaseVisible();
         icon.className = 'status-icon status-icon--completed';
         icon.textContent = '✅';
@@ -1872,6 +1917,7 @@
           discussionContent.textContent = 'Discussion closed. All findings and deliverables are finalized.';
         }
       } else if (status.status === 'failed') {
+        hideLongTaskBanner();
         ensureDiscussionPhaseVisible();
         activeAgentId = null;
         icon.className = 'status-icon status-icon--failed';
@@ -2117,6 +2163,56 @@
           </div>
         </div>
       `;
+    }
+
+    const LONG_TASK_START = [
+      'finalizing datasets',
+      'generating starter code bundle',
+      'applying custom portal styling',
+      'finalizing deliverables'
+    ];
+    const LONG_TASK_END = [
+      'starter code package ready',
+      'styling refinements applied',
+      'final assets ready',
+      'portal ready for candidates'
+    ];
+
+    function updateLongTaskBanner(newLogs) {
+      if (!newLogs || newLogs.length === 0) return;
+      const normalized = newLogs.map(line => line.toLowerCase());
+
+      if (normalized.some(line => LONG_TASK_START.some(keyword => line.includes(keyword)))) {
+        let message = 'Finalizing deliverables. This may take a minute…';
+        if (normalized.some(line => line.includes('starter code'))) {
+          message = 'Generating starter code package… this can take up to a minute.';
+        } else if (normalized.some(line => line.includes('styling'))) {
+          message = 'Applying custom portal styling… almost ready.';
+        } else if (normalized.some(line => line.includes('finalizing'))) {
+          message = 'Finalizing datasets and portal assets… please keep this tab open.';
+        }
+        showLongTaskBanner(message);
+      }
+
+      if (normalized.some(line => LONG_TASK_END.some(keyword => line.includes(keyword)))) {
+        hideLongTaskBanner();
+      }
+    }
+
+    function showLongTaskBanner(message) {
+      if (!longTaskBanner) return;
+      longTaskActive = true;
+      if (longTaskText) {
+        longTaskText.textContent = message || 'Finalizing deliverables. This may take a minute…';
+      }
+      longTaskBanner.classList.add('visible');
+    }
+
+    function hideLongTaskBanner() {
+      if (!longTaskBanner) return;
+      if (!longTaskActive) return;
+      longTaskActive = false;
+      longTaskBanner.classList.remove('visible');
     }
 
     timelineModal?.addEventListener('click', (event) => {

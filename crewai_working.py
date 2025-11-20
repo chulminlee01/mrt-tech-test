@@ -512,6 +512,7 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
     # Final QA
     _log("🔎 [QA Reviewer] Final review - All deliverables look excellent!")
     _log("👔 [PM] FINAL APPROVAL: Portal ready for candidates. Great teamwork! 🎉")
+    _log("🕒 [System] Finalizing datasets, starter code, and portal assets. This step can take up to 90 seconds—please keep this window open.")
     
     return {
         "status": "completed",

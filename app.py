@@ -273,16 +273,19 @@ def run_generation(job_id, job_role, job_level, language):
         
         if assignments_path.exists():
             generation_status[job_id]["progress"] = "Generating starter code..."
+            print("🛠️ [System] Generating starter code bundle for the portal...", flush=True)
             try:
                 run_starter_code_generator(
                     assignments_path=str(assignments_path),
                     output_dir=str(Path(job_dir) / "starter_code")
                 )
+                print("✅ [System] Starter code package ready.", flush=True)
             except Exception as e:
                 print(f"⚠️  Starter code error: {e}", flush=True)
         
         if html_path.exists():
             generation_status[job_id]["progress"] = "Applying custom styling..."
+            print("🧵 [System] Applying custom portal styling and layout polish...", flush=True)
             try:
                 run_web_designer(
                     html_path=str(html_path),
@@ -290,6 +293,7 @@ def run_generation(job_id, job_role, job_level, language):
                     notes_output=str(Path(job_dir) / "design_notes.md"),
                     language=language
                 )
+                print("✅ [System] Styling refinements applied.", flush=True)
             except Exception as e:
                 print(f"⚠️  Web designer error: {e}", flush=True)
         
@@ -298,6 +302,7 @@ def run_generation(job_id, job_role, job_level, language):
         portal_exists = portal_path.exists()
         
         if portal_exists:
+            print("🕒 [System] Final assets ready. Publishing portal link...", flush=True)
             generation_status[job_id].update({
                 "status": "completed",
                 "progress": "✅ Tech test complete! Portal ready for candidates.",
