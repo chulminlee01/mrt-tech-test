@@ -476,6 +476,7 @@
     /* Agent Activity Boxes - Fixed Grid */
     .activities-section {
       margin-top: 1.5rem;
+      display: none !important;
     }
     
     .activities-title {
@@ -869,7 +870,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      max-height: 500px;
+      max-height: 640px;
       overflow-y: auto;
       padding-right: 0.5rem;
     }
@@ -1332,20 +1333,6 @@
           Agents are collaborating and reviewing outputs...
         </div>
       </div>
-      
-      <!-- Agent Logs Section (Collapsed by Default) -->
-      <div class="logs-section">
-        <div class="logs-header" onclick="toggleLogs()">
-          <div class="logs-title">
-            <span>🤖</span>
-            <span>Agent Discussion & Analysis</span>
-            <span class="logs-toggle" id="logsToggle">▼</span>
-          </div>
-        </div>
-        <div class="logs-container visible" id="logsContainer">
-          <div class="logs-empty" id="logsEmpty">Waiting for agents to start...</div>
-        </div>
-      </div>
 
       <div class="timeline-section">
         <div class="timeline-title">
@@ -1361,6 +1348,8 @@
             </div>
           </div>
         </div>
+      </div>
+
       <div class="timeline-modal" id="timelineModal">
         <div class="timeline-modal-content">
           <div class="timeline-modal-header">
@@ -1371,8 +1360,21 @@
           </div>
         </div>
       </div>
-      </div>
       
+      <!-- Agent Logs Section (Collapsed by Default) -->
+      <div class="logs-section">
+        <div class="logs-header" onclick="toggleLogs()">
+          <div class="logs-title">
+            <span>🤖</span>
+            <span>Agent Discussion & Analysis</span>
+            <span class="logs-toggle" id="logsToggle">▼</span>
+          </div>
+        </div>
+        <div class="logs-container visible" id="logsContainer">
+          <div class="logs-empty" id="logsEmpty">Waiting for agents to start...</div>
+        </div>
+      </div>
+
       <div id="statusActions" style="text-align: center; display: none;">
         <a href="#" id="resultLink" class="result-link" target="_blank">
           📄 View Generated Tech Test
@@ -2161,7 +2163,7 @@
         if (
           prevEntry &&
           prevEntry.roleId === entry.roleId &&
-          prevEntry.type === prevEntry.type &&
+          prevEntry.type === entry.type &&
           normalizeMessage(prevEntry.message) === normalizeMessage(entry.message)
         ) {
           return;
@@ -2310,7 +2312,6 @@
           <div class="timeline-body">
             <div class="timeline-role-label">[${entry.role}]${entry.time ? ` · <span class="timeline-time">${entry.time}</span>` : ''}</div>
             <div class="timeline-text">${entry.message}</div>
-            ${entry.detail ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
             ${isActive ? `<div class="timeline-thinking">thinking<span></span><span></span><span></span></div>` : ''}
           </div>
         </div>
