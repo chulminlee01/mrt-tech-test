@@ -74,57 +74,60 @@ class LogCapture(io.StringIO):
         
         # Detect which phase we're in based on logs and update agent status
         agent_status = generation_status[self.job_id].get('agent_status', {})
+
+        def set_progress(label, agent_id=None):
+            if generation_status[self.job_id].get('progress') == label:
+                return
+            generation_status[self.job_id]['progress'] = label
+            if agent_id:
+                generation_status[self.job_id]['active_agent'] = agent_id
         
         # PM phases
         if '[pm]' in text_lower and ('kick' in text_lower or 'project' in text_lower):
-            generation_status[self.job_id]['progress'] = '👔 PM initializing project...'
-            generation_status[self.job_id]['active_agent'] = 'pm'
+            set_progress('👔 PM initializing project...', 'pm')
             agent_status['pm'] = 'active'
         elif '[pm]' in text_lower and 'aligning' in text_lower:
-            generation_status[self.job_id]['progress'] = '💬 PM aligning on skills...'
-            generation_status[self.job_id]['active_agent'] = 'pm'
+            set_progress('💬 PM aligning on skills...', 'pm')
             agent_status['pm'] = 'active'
         elif '[pm]' in text_lower and 'final approval' in text_lower:
-            generation_status[self.job_id]['progress'] = '👔 PM giving final approval...'
-            generation_status[self.job_id]['active_agent'] = 'pm'
+            set_progress('👔 PM giving final approval...', 'pm')
             agent_status['pm'] = 'completed'
         
         # Research Analyst
         elif '[research' in text_lower:
-            generation_status[self.job_id]['progress'] = '🔍 Research Analyst investigating...'
-            generation_status[self.job_id]['active_agent'] = 'researcher'
+            set_progress('🔍 Research Analyst investigating...', 'researcher')
             agent_status['researcher'] = 'active'
         elif 'research summary saved' in text_lower:
+            set_progress('✅ Research summary shared with PM...', 'pm')
             agent_status['researcher'] = 'completed'
         
         # Data Provider  
         elif '[data provider]' in text_lower or 'creating datasets' in text_lower:
-            generation_status[self.job_id]['progress'] = '📊 Data Provider creating datasets...'
-            generation_status[self.job_id]['active_agent'] = 'data'
+            set_progress('📊 Data Provider creating datasets...', 'data')
             agent_status['data'] = 'active'
         elif 'datasets created' in text_lower:
+            set_progress('✅ Datasets ready. Web Builder preparing portal...', 'builder')
             agent_status['data'] = 'completed'
         
         # Web Builder
         elif '[web builder]' in text_lower or 'building candidate portal' in text_lower:
-            generation_status[self.job_id]['progress'] = '🌐 Web Builder creating portal...'
-            generation_status[self.job_id]['active_agent'] = 'builder'
+            set_progress('🌐 Web Builder creating portal...', 'builder')
             agent_status['builder'] = 'active'
         elif 'portal built' in text_lower:
+            set_progress('✅ Portal skeleton built. Web Designer styling...', 'styler')
             agent_status['builder'] = 'completed'
         
         # Web Designer
         elif '[web designer]' in text_lower or 'applying myrealtrip branding' in text_lower:
-            generation_status[self.job_id]['progress'] = '🎨 Web Designer styling portal...'
-            generation_status[self.job_id]['active_agent'] = 'styler'
+            set_progress('🎨 Web Designer styling portal...', 'styler')
             agent_status['styler'] = 'active'
         elif 'styling applied' in text_lower:
+            set_progress('✅ Styling finalized. QA reviewing...', 'reviewer')
             agent_status['styler'] = 'completed'
         
         # QA Reviewer
         elif '[qa' in text_lower or 'final review' in text_lower:
-            generation_status[self.job_id]['progress'] = '🔎 QA reviewing deliverables...'
-            generation_status[self.job_id]['active_agent'] = 'reviewer'
+            set_progress('🔎 QA reviewing deliverables...', 'reviewer')
             agent_status['reviewer'] = 'active'
         
         # Update agent_status in generation_status

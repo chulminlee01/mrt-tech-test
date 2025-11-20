@@ -869,7 +869,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      max-height: 360px;
+      max-height: 500px;
       overflow-y: auto;
       padding-right: 0.5rem;
     }
@@ -2098,9 +2098,17 @@
       if (!newLogs || newLogs.length === 0) return;
       newLogs.forEach(log => {
         const entry = buildTimelineEntry(log);
-        if (entry) {
-          timelineEntries.push(entry);
+        if (!entry) return;
+        const lastEntry = timelineEntries[timelineEntries.length - 1];
+        if (
+          lastEntry &&
+          lastEntry.roleId === entry.roleId &&
+          lastEntry.type === entry.type &&
+          lastEntry.message === entry.message
+        ) {
+          return;
         }
+        timelineEntries.push(entry);
       });
       if (timelineEntries.length > MAX_TIMELINE_ENTRIES) {
         timelineEntries = timelineEntries.slice(-MAX_TIMELINE_ENTRIES);
@@ -2132,7 +2140,7 @@
           role: 'Task Update',
           roleId: 'task',
           message: taskMessage,
-          detail: formatTimelineDetail(log),
+          detail: '',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'task'
         };
@@ -2144,12 +2152,13 @@
       if (!roleMatch) return null;
       const message = formatTimelineMessage(log);
       if (!message) return null;
+      const detail = formatTimelineDetail(log);
       return {
         icon: roleMatch.icon,
         role: roleMatch.label,
         roleId: roleMatch.id,
         message,
-        detail: formatTimelineDetail(log),
+        detail: detail === message ? '' : detail,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'chat'
       };
@@ -2157,7 +2166,8 @@
 
     function formatTimelineMessage(text) {
       if (!text) return '';
-      let cleaned = text.replace(/^([^\[]*\[[^\]]+\]\s*)/, '').trim();
+      let cleaned = stripThinkBlocks(text);
+      cleaned = cleaned.replace(/^([^\[]*\[[^\]]+\]\s*)/, '').trim();
       cleaned = cleaned.replace(/^([^\p{L}\p{N}]+)?/u, '').trim();
       return escapeHTML(cleaned);
     }
@@ -2169,7 +2179,12 @@
 
     function formatTimelineDetail(text) {
       if (!text) return '';
-      return escapeHTML(text.replace(/\s+/g, ' ').trim());
+      return escapeHTML(stripThinkBlocks(text).replace(/\s+/g, ' ').trim());
+    }
+
+    function stripThinkBlocks(text) {
+      if (!text) return '';
+      return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
     }
 
     function escapeHTML(str) {
@@ -2196,16 +2211,7 @@
         `;
         return;
       }
-      list.innerHTML = timelineEntries.map(entry => `
-        <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''} ${entry.type === 'task' ? 'task' : ''}">
-          <div class="timeline-icon">${entry.icon}</div>
-          <div class="timeline-body">
-            <div class="timeline-role-label">[${entry.role}]${entry.time ? ` · <span class="timeline-time">${entry.time}</span>` : ''}</div>
-            <div class="timeline-text">${entry.message}</div>
-            ${entry.detail && entry.detail !== entry.message ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
-          </div>
-        </div>
-      `).join('');
+      list.innerHTML = timelineEntries.map(entry => renderTimelineBubble(entry)).join('');
     }
 
     function openTimelineModal() {
@@ -2235,16 +2241,20 @@
         `;
         return;
       }
-      timelineModalBody.innerHTML = timelineEntries.map(entry => `
+      timelineModalBody.innerHTML = timelineEntries.map(entry => renderTimelineBubble(entry)).join('');
+    }
+
+    function renderTimelineBubble(entry) {
+      return `
         <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''} ${entry.type === 'task' ? 'task' : ''}">
           <div class="timeline-icon">${entry.icon}</div>
           <div class="timeline-body">
             <div class="timeline-role-label">[${entry.role}]${entry.time ? ` · <span class="timeline-time">${entry.time}</span>` : ''}</div>
             <div class="timeline-text">${entry.message}</div>
-            ${entry.detail && entry.detail !== entry.message ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
+            ${entry.detail ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
           </div>
         </div>
-      `).join('');
+      `;
     }
 
     timelineModal?.addEventListener('click', (event) => {
