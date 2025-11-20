@@ -840,14 +840,36 @@
       margin-bottom: 1rem;
       display: flex;
       align-items: center;
+      gap: 0.5rem;
+      justify-content: space-between;
+    }
+
+    .timeline-title span:first-child {
+      display: inline-flex;
+      align-items: center;
       gap: 0.35rem;
+    }
+
+    .timeline-expand-btn {
+      border: none;
+      background: var(--slate-700);
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .timeline-expand-btn:hover {
+      opacity: 0.85;
     }
 
     .timeline-list {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      max-height: 260px;
+      max-height: 360px;
       overflow-y: auto;
       padding-right: 0.5rem;
     }
@@ -898,9 +920,22 @@
       color: #a5b4fc;
     }
 
+    .timeline-time {
+      font-weight: 500;
+      font-size: 0.8rem;
+      color: rgba(226, 232, 240, 0.85);
+    }
+
     .timeline-text {
       font-size: 0.92rem;
       line-height: 1.6;
+    }
+
+    .timeline-detail {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: #cbd5f5;
+      opacity: 0.9;
     }
 
     .timeline-entry.task .timeline-body {
@@ -909,6 +944,63 @@
       text-align: center;
       font-style: italic;
       color: #f1f5f9;
+    }
+
+    .timeline-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      z-index: 1500;
+      padding: 2rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .timeline-modal.visible {
+      display: flex;
+    }
+
+    .timeline-modal-content {
+      background: #0f172a;
+      border-radius: 18px;
+      max-width: 900px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 65px rgba(15, 23, 42, 0.65);
+    }
+
+    .timeline-modal-header {
+      padding: 1.5rem 1.75rem;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #e2e8f0;
+    }
+
+    .timeline-modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      max-height: calc(80vh - 120px);
+    }
+
+    .timeline-modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(148, 163, 184, 0.2);
+      color: #f8fafc;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .timeline-modal-close:hover {
+      background: rgba(148, 163, 184, 0.35);
     }
     
     .logs-container::-webkit-scrollbar {
@@ -1197,7 +1289,7 @@
       <div class="discussion-phase" id="discussionPhase">
         <div class="discussion-title">
           <span>💬</span>
-          <span>Team Discussion in Progress</span>
+          <span id="discussionTitleText">Team Discussion in Progress</span>
         </div>
         <div class="discussion-content" id="discussionContent">
           Agents are collaborating and reviewing outputs...
@@ -1219,7 +1311,10 @@
       </div>
 
       <div class="timeline-section">
-        <div class="timeline-title">🕒 Crew Discussion Timeline</div>
+        <div class="timeline-title">
+          <span>🕒 Crew Discussion Timeline</span>
+          <button class="timeline-expand-btn" onclick="openTimelineModal()">View Full Discussion</button>
+        </div>
         <div class="timeline-list" id="timelineList">
           <div class="timeline-entry">
             <div class="timeline-icon">ℹ️</div>
@@ -1229,6 +1324,16 @@
             </div>
           </div>
         </div>
+      <div class="timeline-modal" id="timelineModal">
+        <div class="timeline-modal-content">
+          <div class="timeline-modal-header">
+            <div>🗂️ Full Crew Discussion</div>
+            <button class="timeline-modal-close" onclick="closeTimelineModal()">×</button>
+          </div>
+          <div class="timeline-modal-body" id="timelineModalBody">
+          </div>
+        </div>
+      </div>
       </div>
       
       <div id="statusActions" style="text-align: center; display: none;">
@@ -1270,6 +1375,9 @@
       { id: 'qa', label: 'QA Reviewer', icon: '🔎', keywords: ['[qa', 'qa reviewer', 'approved'] },
       { id: 'assignments', label: 'Assignment Generator', icon: '📝', keywords: ['generating assignments', 'assignments generated'] }
     ];
+    const timelineModal = document.getElementById('timelineModal');
+    const timelineModalBody = document.getElementById('timelineModalBody');
+    const discussionTitleText = document.getElementById('discussionTitleText');
     
     // Agent definitions (7 agents: 4 CrewAI + 3 post-processing)
     const agents = [
@@ -1519,6 +1627,7 @@
       document.getElementById('logsToggle').classList.add('collapsed');
       timelineEntries = [];
       renderTimeline();
+      renderTimelineModal();
       
       // Initialize activity boxes
       initializeActivityBoxes();
@@ -1872,6 +1981,7 @@
       const resultLink = document.getElementById('resultLink');
 
       const discussionPhase = document.getElementById('discussionPhase');
+      const discussionContent = document.getElementById('discussionContent');
 
       if (status.status === 'running' || status.status === 'initializing') {
         icon.className = 'status-icon status-icon--running';
@@ -1883,6 +1993,12 @@
         actions.style.display = 'none';
         if (discussionPhase) {
           discussionPhase.classList.remove('completed');
+        }
+        if (discussionTitleText) {
+          discussionTitleText.textContent = 'Team Discussion in Progress';
+        }
+        if (discussionContent) {
+          discussionContent.textContent = status.progress || 'Agents are collaborating and reviewing outputs...';
         }
       } else if (status.status === 'completed') {
         icon.className = 'status-icon status-icon--completed';
@@ -1919,6 +2035,12 @@
         if (discussionPhase) {
           discussionPhase.classList.add('completed');
         }
+        if (discussionTitleText) {
+          discussionTitleText.textContent = 'Team Discussion Completed';
+        }
+        if (discussionContent) {
+          discussionContent.textContent = 'Discussion closed. All findings and deliverables are finalized.';
+        }
       } else if (status.status === 'failed') {
         icon.className = 'status-icon status-icon--failed';
         icon.textContent = '❌';
@@ -1929,6 +2051,12 @@
         actions.style.display = 'none';
         if (discussionPhase) {
           discussionPhase.classList.remove('completed');
+        }
+        if (discussionTitleText) {
+          discussionTitleText.textContent = 'Team Discussion Interrupted';
+        }
+        if (discussionContent) {
+          discussionContent.textContent = status.error || 'The crew encountered an error. Please review logs and retry.';
         }
       }
     }
@@ -1978,6 +2106,9 @@
         timelineEntries = timelineEntries.slice(-MAX_TIMELINE_ENTRIES);
       }
       renderTimeline();
+      if (timelineModal && timelineModal.classList.contains('visible')) {
+        renderTimelineModal();
+      }
     }
 
     function buildTimelineEntry(log) {
@@ -2001,6 +2132,8 @@
           role: 'Task Update',
           roleId: 'task',
           message: taskMessage,
+          detail: formatTimelineDetail(log),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'task'
         };
       }
@@ -2016,6 +2149,8 @@
         role: roleMatch.label,
         roleId: roleMatch.id,
         message,
+        detail: formatTimelineDetail(log),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'chat'
       };
     }
@@ -2024,12 +2159,26 @@
       if (!text) return '';
       let cleaned = text.replace(/^([^\[]*\[[^\]]+\]\s*)/, '').trim();
       cleaned = cleaned.replace(/^([^\p{L}\p{N}]+)?/u, '').trim();
-      return cleaned;
+      return escapeHTML(cleaned);
     }
 
     function formatTaskMessage(text) {
       if (!text) return '';
-      return text.replace(/\s+/g, ' ').trim();
+      return escapeHTML(text.replace(/\s+/g, ' ').trim());
+    }
+
+    function formatTimelineDetail(text) {
+      if (!text) return '';
+      return escapeHTML(text.replace(/\s+/g, ' ').trim());
+    }
+
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     function renderTimeline() {
@@ -2051,12 +2200,64 @@
         <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''} ${entry.type === 'task' ? 'task' : ''}">
           <div class="timeline-icon">${entry.icon}</div>
           <div class="timeline-body">
-            <div class="timeline-role-label">[${entry.role}]</div>
+            <div class="timeline-role-label">[${entry.role}]${entry.time ? ` · <span class="timeline-time">${entry.time}</span>` : ''}</div>
             <div class="timeline-text">${entry.message}</div>
+            ${entry.detail && entry.detail !== entry.message ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
           </div>
         </div>
       `).join('');
     }
+
+    function openTimelineModal() {
+      if (!timelineModal) return;
+      renderTimelineModal();
+      timelineModal.classList.add('visible');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeTimelineModal() {
+      if (!timelineModal) return;
+      timelineModal.classList.remove('visible');
+      document.body.style.overflow = '';
+    }
+
+    function renderTimelineModal() {
+      if (!timelineModalBody) return;
+      if (timelineEntries.length === 0) {
+        timelineModalBody.innerHTML = `
+          <div class="timeline-entry">
+            <div class="timeline-icon">ℹ️</div>
+            <div class="timeline-body">
+              <div class="timeline-role-label">[System]</div>
+              <div class="timeline-text">Timeline will appear as soon as the crew starts collaborating.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      timelineModalBody.innerHTML = timelineEntries.map(entry => `
+        <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''} ${entry.type === 'task' ? 'task' : ''}">
+          <div class="timeline-icon">${entry.icon}</div>
+          <div class="timeline-body">
+            <div class="timeline-role-label">[${entry.role}]${entry.time ? ` · <span class="timeline-time">${entry.time}</span>` : ''}</div>
+            <div class="timeline-text">${entry.message}</div>
+            ${entry.detail && entry.detail !== entry.message ? `<div class="timeline-detail">${entry.detail}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    timelineModal?.addEventListener('click', (event) => {
+      if (event.target === timelineModal) {
+        closeTimelineModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && timelineModal?.classList.contains('visible')) {
+        closeTimelineModal();
+      }
+    });
 
     // Load recent jobs on page load
     loadRecentJobs();
