@@ -20,7 +20,10 @@ except ImportError:
         from langchain_core.agents import AgentExecutor, create_react_agent
 
 from langchain_core.tools import Tool
-from langchain import hub
+try:
+    from langchain import hub
+except ImportError:
+    from langchain_classic import hub
 
 from llm_client import create_llm_client, create_nvidia_llm_direct
 
