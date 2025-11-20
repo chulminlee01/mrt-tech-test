@@ -167,9 +167,9 @@ def create_llm_client(
 
 
 def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
-    """Create NVIDIA client with DeepSeek v3.1 terminus (thinking enabled)."""
+    """Create NVIDIA client with Qwen (primary) or DeepSeek."""
     # NVIDIA uses OpenAI-compatible API
-    nvidia_model = os.getenv("DEFAULT_MODEL", "deepseek-ai/deepseek-v3.1-terminus")
+    nvidia_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
     base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     api_key = os.getenv("NVIDIA_API_KEY")
     

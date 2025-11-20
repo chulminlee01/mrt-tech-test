@@ -8,11 +8,16 @@ import requests
 
 from dotenv import load_dotenv
 try:
-    # Try new import path (LangChain 0.2+)
-    from langchain.agents import AgentExecutor, create_react_agent
+    # Try langchain_classic (found in installed packages)
+    from langchain_classic.agents.agent import AgentExecutor
+    from langchain_classic.agents.react.agent import create_react_agent
 except ImportError:
-    # Fallback to old import path
-    from langchain_core.agents import AgentExecutor, create_react_agent
+    try:
+        # Try new import path (LangChain 0.2+)
+        from langchain.agents import AgentExecutor, create_react_agent
+    except ImportError:
+        # Fallback to old import path
+        from langchain_core.agents import AgentExecutor, create_react_agent
 
 from langchain_core.tools import Tool
 from langchain import hub
