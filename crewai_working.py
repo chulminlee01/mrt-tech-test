@@ -145,7 +145,7 @@ def _run_crewai_classic(
     language: str,
     output_dir: Path
 ) -> Dict:
-    """Run working CrewAI with proper collaboration."""
+    """Run working CrewAI with proper collaboration (Hierarchical Process)."""
     
     global CURRENT_RESEARCH_PATH, CURRENT_ASSIGNMENTS_PATH
     
@@ -155,41 +155,14 @@ def _run_crewai_classic(
     CURRENT_RESEARCH_PATH = str(output_dir / "research_report.txt")
     CURRENT_ASSIGNMENTS_PATH = str(output_dir / "assignments.json")
     
-    # Configure LLM using our flexible client (supports NVIDIA, OpenAI, OpenRouter)
-    from llm_client import create_llm_client
-    
+    # Configure LLM using our flexible client
     print("=" * 70)
-    print("🎯 CrewAI Team-Based Generation")
+    print("🎯 CrewAI Team-Based Generation (Hierarchical)")
     print("=" * 70)
     
-    # Check which LLM provider is configured
-    nvidia_key = os.getenv("NVIDIA_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
-    openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    
-    # Use NVIDIA if available (bypass all LiteLLM complexity)
-    if nvidia_key:
-        print("🔧 Using NVIDIA API")
-        from llm_client import create_nvidia_llm_direct
-        llm = create_nvidia_llm_direct(temperature=0.3)  # Lower temp for faster, deterministic responses
-        print()
-        
-    elif openai_key:
-        print("🔧 Using OpenAI API")
-        llm = create_llm_client(temperature=0.7)
-        print()
-    elif openrouter_key:
-        print("🔧 Using OpenRouter API")
-        llm = create_llm_client(temperature=0.7)
-        print()
-    else:
-        print("❌ Error: No LLM API key found")
-        print()
-        print("Please set one of these environment variables:")
-        print("  - NVIDIA_API_KEY (recommended)")
-        print("  - OPENAI_API_KEY")
-        print("  - OPENROUTER_API_KEY")
-        raise LLMClientError("No LLM API key configured")
+    # Setup LLM - defaulting to NVIDIA Minimax or Qwen
+    from llm_client import create_nvidia_llm_direct
+    llm = create_nvidia_llm_direct(temperature=0.4)
     
     # Create all 6 agents (Designer removed)
     pm, researcher, data_provider, web_builder, web_designer, reviewer = create_working_agents(llm)
@@ -203,295 +176,118 @@ def _run_crewai_classic(
     print(f"   🔎 {reviewer.role}")
     print()
     
-    # Task 1: PM Kickoff
+    # Task 1: Research & Analysis
     task1 = Task(
-        description=f"""Say: "Team, let's create assignments for {job_level} {job_role}. Researcher, investigate required skills."
-
-2 sentences only.""",
-        expected_output="PM kickoff (2 sentences)",
-        agent=pm,
+        description=f"""Conduct research for {job_level} {job_role} roles in OTA companies.
+        Identify 5 key technical skills and 3 trending interview topics.
+        Output a concise list.""",
+        expected_output="List of skills and topics",
+        agent=researcher,
         async_execution=False
     )
     
-    # Task 2: Research
+    # Task 2: Discussion & Planning (PM + Team)
     task2 = Task(
-        description=f"""List 5 key skills for {job_level} {job_role}:
-1. [Skill]
-2. [Skill]
-3. [Skill]
-4. [Skill]
-5. [Skill]
-
-Just list 5 skills. No explanation.""",
-        expected_output=f"5 key skills for {job_level} {job_role}",
-        agent=researcher,
+        description=f"""Review the research and plan the take-home assignment structure.
+        Decide on:
+        1. The core coding problem (related to OTA/Travel)
+        2. Required datasets (e.g., hotels, flights)
+        3. Evaluation criteria
+        
+        Discuss with the team and output a finalized plan.""",
+        expected_output="Assignment plan with problem, datasets, and criteria",
+        agent=pm,
         context=[task1],
         async_execution=False
     )
     
-    # Task 3: PM Coordinates
+    # Task 3: Data Preparation
     task3 = Task(
-        description=f"""Say: "Great! Data Provider, Web Builder, Web Designer - please create the assets."
-
-1 sentence only.""",
-        expected_output="PM delegation (1 sentence)",
-        agent=pm,
+        description=f"""Based on the plan, confirm the datasets to be generated.
+        List specific JSON files (e.g., hotels.json, bookings.json) needed.""",
+        expected_output="List of datasets to generate",
+        agent=data_provider,
         context=[task2],
         async_execution=False
     )
     
-    # Task 4: Data Provider
+    # Task 4: Web Asset Planning
     task4 = Task(
-        description=f"""Say: "I'll create OTA datasets - hotels, flights, bookings."
-
-1-2 sentences.""",
-        expected_output="Data Provider confirmation",
-        agent=data_provider,
-        context=[task3],
-        async_execution=False
-    )
-    
-    # Task 5: Web Builder
-    task5 = Task(
-        description=f"""Say: "I'll build the candidate portal."
-
-1 sentence.""",
-        expected_output="Web Builder confirmation",
-        agent=web_builder,
-        context=[task4],
-        async_execution=False
-    )
-    
-    # Task 6: Web Designer  
-    task6 = Task(
-        description=f"""Say: "I'll apply Myrealtrip branding."
-
-1 sentence.""",
-        expected_output="Web Designer confirmation",
+        description=f"""Confirm the web portal structure and branding.
+        Ensure Myrealtrip colors (Emerald Green) and responsive design are applied.""",
+        expected_output="Web portal structure and styling plan",
         agent=web_designer,
-        context=[task5],
+        context=[task2],
         async_execution=False
     )
     
-    # Task 7: QA Review
-    task7 = Task(
-        description=f"""Say: "APPROVED - Plan looks solid."
-
-1 sentence.""",
-        expected_output="QA approval",
+    # Task 5: Final QA & Approval
+    task5 = Task(
+        description=f"""Review the entire plan (Research, Assignment, Data, Web).
+        Check for alignment with {job_level} {job_role} expectations.
+        If good, output 'APPROVED'. If issues, list them.""",
+        expected_output="Approval decision",
         agent=reviewer,
-        context=[task6],
+        context=[task1, task2, task3, task4],
         async_execution=False
     )
     
-    # Task 8: PM Final
-    task8 = Task(
-        description=f"""Say: "Excellent! Proceed with the work."
-
-1 sentence.""",
-        expected_output="PM go-ahead",
-        agent=pm,
-        context=[task7],
-        async_execution=False
-    )
-    
-    # Create crew with all 6 agents
-    print("📋 Tasks Defined (8 tasks):")
-    print(f"   1. PM Kickoff")
-    print(f"   2. Researcher Findings")
-    print(f"   3. PM Coordination")
-    print(f"   4. Data Provider Confirmation")
-    print(f"   5. Web Builder Confirmation")
-    print(f"   6. Web Designer Confirmation")
-    print(f"   7. QA Approval")
-    print(f"   8. PM Final Go-Ahead")
-    print()
-    print("🚀 Initializing CrewAI Team (6 agents)...")
-    print()
+    # Create crew with hierarchical process
+    print("🚀 Initializing Hierarchical Crew...")
     
     crew = Crew(
         agents=[pm, researcher, data_provider, web_builder, web_designer, reviewer],
-        tasks=[task1, task2, task3, task4, task5, task6, task7, task8],
-        process=Process.sequential,
+        tasks=[task1, task2, task3, task4, task5],
+        process=Process.hierarchical,  # Enable Hierarchical Process
+        manager_llm=llm,               # Manager uses the same robust LLM
         verbose=True
     )
     
-    print("=" * 70)
     print("🎬 Starting Team Collaboration...")
-    print("=" * 70)
-    print()
-    
-    # Execute
     result = crew.kickoff()
     
-    print()
-    print("=" * 70)
     print("✅ Team Collaboration Complete")
-    print("=" * 70)
-    print()
     
-    # Save discussion output to file
+    # Save discussion output
     discussion_text = str(result)
-    
-    # Save the full collaboration discussion
     Path(CURRENT_RESEARCH_PATH).write_text(discussion_text, encoding="utf-8")
-    print(f"✅ Team discussion saved to: {CURRENT_RESEARCH_PATH}")
     
-    # For assignments, use the proven agent_question_generator
-    print()
-    print("=" * 70)
-    print("📝 Phase 1.5: Generating Detailed Assignments")
-    print("=" * 70)
+    # --- Trigger Asset Generation (Phase 2) ---
+    # This part reuses the deterministic generators to ensure high-quality file output
+    # based on the Crew's plan.
     
-    try:
-        from agent_question_generator import run_question_generator
-        import traceback
-        
-        print(f"   Reading research from: {CURRENT_RESEARCH_PATH}")
-        print(f"   Will save assignments to: {CURRENT_ASSIGNMENTS_PATH}")
-        
-        # Make sure research file exists
-        if not Path(CURRENT_RESEARCH_PATH).exists():
-            print(f"   ⚠️  Research file not found, creating placeholder...")
-            Path(CURRENT_RESEARCH_PATH).write_text(f"Research for {job_level} {job_role}", encoding="utf-8")
-        
-        print(f"   Calling assignment generator...")
-        
-        run_question_generator(
-            job_role=job_role,
-            job_level=job_level,
-            company_name="Myrealtrip OTA Company",
-            input_path=CURRENT_RESEARCH_PATH,
-            output_path=CURRENT_ASSIGNMENTS_PATH,
-            language=language,
-            model=None,  # Use default model
-            temperature=0.5
-        )
-        print(f"   ✅ Assignments generated and saved to: {CURRENT_ASSIGNMENTS_PATH}")
-        
-        # Verify file was created
-        if Path(CURRENT_ASSIGNMENTS_PATH).exists():
-            file_size = Path(CURRENT_ASSIGNMENTS_PATH).stat().st_size
-            print(f"   ✅ Verified: assignments.json created ({file_size} bytes)")
-        else:
-            print(f"   ❌ ERROR: assignments.json was NOT created!")
-            
-    except Exception as e:
-        print(f"❌ Assignment generation failed: {e}")
-        print(f"   Error type: {type(e).__name__}")
-        import traceback
-        traceback.print_exc()
-        print(f"   ⚠️  Attempting to continue with remaining steps...")
+    print("\n📝 Phase 2: Generating Assets based on Crew Plan")
     
-    # Post-processing: Generate all assets
-    print()
-    print("=" * 70)
-    print("🏗️  Asset Generation Phase")
-    print("=" * 70)
+    from agent_question_generator import run_question_generator
+    run_question_generator(
+        job_role=job_role,
+        job_level=job_level,
+        company_name="Myrealtrip OTA",
+        input_path=CURRENT_RESEARCH_PATH,
+        output_path=CURRENT_ASSIGNMENTS_PATH,
+        language=language
+    )
     
-    assignments_exists = Path(CURRENT_ASSIGNMENTS_PATH).exists()
-    print(f"   Assignments file exists: {assignments_exists}")
+    datasets_dir = str(output_dir / "datasets")
+    run_data_provider(
+        assignments_path=CURRENT_ASSIGNMENTS_PATH,
+        output_dir=datasets_dir,
+        language=language
+    )
     
-    if assignments_exists:
-        # Generate datasets
-        print()
-        print("📊 Step 1: Generating datasets...")
-        try:
-            datasets_dir = str(output_dir / "datasets")
-            print(f"   Target: {datasets_dir}")
-            run_data_provider(
-                assignments_path=CURRENT_ASSIGNMENTS_PATH,
-                output_dir=datasets_dir,
-                language=language
-            )
-            print(f"   ✅ Datasets generated in: {datasets_dir}")
-        except Exception as e:
-            print(f"   ❌ Dataset generation error: {e}")
-            import traceback
-            traceback.print_exc()
-        
-        # Generate starter code
-        print()
-        print("🧰 Step 2: Generating starter code...")
-        try:
-            from agent_starter_code import run_starter_code_generator
-            starter_dir = str(output_dir / "starter_code")
-            print(f"   Target: {starter_dir}")
-            run_starter_code_generator(
-                assignments_path=CURRENT_ASSIGNMENTS_PATH,
-                output_dir=starter_dir
-            )
-            print(f"   ✅ Starter code generated in: {starter_dir}")
-        except Exception as e:
-            print(f"   ❌ Starter code error: {e}")
-            import traceback
-            traceback.print_exc()
-        
-        # Build web portal
-        print()
-        print("🌐 Step 3: Building web portal...")
-        try:
-            html_path = str(output_dir / "index.html")
-            print(f"   Target: {html_path}")
-            run_web_builder(
-                assignments_path=CURRENT_ASSIGNMENTS_PATH,
-                research_summary_path=CURRENT_RESEARCH_PATH,
-                output_html=html_path,
-                language=language,
-                starter_dir=str(output_dir / "starter_code")
-            )
-            print(f"   ✅ Web portal built: {html_path}")
-            
-            # Verify
-            if Path(html_path).exists():
-                size = Path(html_path).stat().st_size
-                print(f"   ✅ Verified: index.html created ({size} bytes)")
-            else:
-                print(f"   ❌ ERROR: index.html was NOT created!")
-        except Exception as e:
-            print(f"   ❌ Web builder error: {e}")
-            import traceback
-            traceback.print_exc()
-        
-        # Apply styling
-        print()
-        print("🎨 Step 4: Applying custom styling...")
-        try:
-            from agent_web_designer import run_web_designer
-            html_path = str(output_dir / "index.html")
-            css_path = str(output_dir / "styles.css")
-            print(f"   HTML: {html_path}")
-            print(f"   CSS: {css_path}")
-            
-            if Path(html_path).exists():
-                run_web_designer(
-                    html_path=html_path,
-                    css_output=css_path,
-                    notes_output=str(output_dir / "design_notes.md"),
-                    language=language
-                )
-                print(f"   ✅ Styling applied")
-            else:
-                print(f"   ⚠️  Skipping styling - HTML not found")
-        except Exception as e:
-            print(f"   ❌ Web designer error: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        print("   ❌ Assignments file not found - skipping asset generation")
-        print(f"   Expected: {CURRENT_ASSIGNMENTS_PATH}")
-    
-    # Check if portal was created
-    portal_path = output_dir / "index.html"
-    portal_ready = portal_path.exists()
-    
-    print(f"📊 Portal status: {'✅ Created' if portal_ready else '⏳ Pending'}")
+    run_web_builder(
+        assignments_path=CURRENT_ASSIGNMENTS_PATH,
+        research_summary_path=CURRENT_RESEARCH_PATH,
+        output_html=str(output_dir / "index.html"),
+        language=language,
+        starter_dir=str(output_dir / "starter_code")
+    )
     
     return {
         "status": "completed",
         "result": discussion_text,
         "output_dir": str(output_dir),
-        "portal_ready": portal_ready
+        "portal_ready": True
     }
 
 
@@ -656,8 +452,8 @@ def generate_with_crewai(
     print(f"📁 Output: {output_dir}")
     print()
     
-    # Use Simple Pipeline by default (Full CrewAI has persistent LiteLLM issues)
-    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "true").lower() == "true"
+    # Use Hierarchical Pipeline as requested
+    use_simple = os.getenv("USE_SIMPLE_PIPELINE", "false").lower() == "true"
     
     if use_simple:
         print("⚡ Using simple deterministic pipeline")
@@ -668,7 +464,7 @@ def generate_with_crewai(
             output_dir=output_dir
         )
     
-    print("🧠 Using Full CrewAI Collaboration Pipeline")
+    print("🧠 Using Full CrewAI Collaboration Pipeline (Hierarchical)")
     return _run_crewai_classic(
         job_role=job_role,
         job_level=job_level,

@@ -19,11 +19,11 @@ class LLMClientError(Exception):
 
 def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     """
-    Create NVIDIA LLM with DeepSeek primary and Moonshot Kimi fallback.
+    Create NVIDIA LLM with Minimax-M2 as default for hierarchical crew.
     
     Tries:
-    1. deepseek-ai/deepseek-v3.1-terminus (high quality, may be slow)
-    2. moonshotai/kimi-k2-instruct-0905 (fast, reliable fallback)
+    1. minimaxai/minimax-m2 (fast, good context)
+    2. qwen/qwen3-next-80b-a3b-instruct (high quality backup)
     """
     nvidia_key = os.getenv("NVIDIA_API_KEY")
     if not nvidia_key:
@@ -35,16 +35,15 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Get desired model (Qwen as primary)
-    nvidia_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
+    # Get desired model (Minimax as requested default)
+    nvidia_model = os.getenv("DEFAULT_MODEL", "minimaxai/minimax-m2")
     
     print(f"🚀 Creating NVIDIA LLM")
     print(f"   Model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
-    print(f"   For: Simple Pipeline (bypasses LiteLLM)")
+    print(f"   For: Hierarchical CrewAI")
     
     # Simple approach: Direct model name without any prefix
-    # This works for Simple Pipeline which doesn't use LiteLLM
     llm = ChatOpenAI(
         model=nvidia_model,
         temperature=temperature,
