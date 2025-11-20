@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -71,24 +72,11 @@ def _extract_json_payload(raw: str) -> str:
 
 
 
-_ALLOWED_CODEPOINT_RANGES = (
-    (0x0009, 0x000A),
-    (0x000D, 0x000D),
-    (0x0020, 0x007E),
-    (0x1100, 0x11FF),
-    (0x3130, 0x318F),
-    (0xA960, 0xA97F),
-    (0xAC00, 0xD7A3),
-    (0xD7B0, 0xD7FF),
-)
-
-
 def _is_allowed_char(ch: str) -> bool:
-    code = ord(ch)
-    for lower, upper in _ALLOWED_CODEPOINT_RANGES:
-        if lower <= code <= upper:
-            return True
-    return False
+    if ch in ("\n", "\r", "\t"):
+        return True
+    category = unicodedata.category(ch)
+    return not category.startswith("C")
 
 
 def _sanitize_string(text: str) -> str:
