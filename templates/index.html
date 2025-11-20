@@ -356,6 +356,11 @@
       animation: slideIn 0.5s ease-out;
     }
     
+    .discussion-phase.completed {
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      border-color: #16a34a;
+    }
+
     @keyframes slideIn {
       from {
         opacity: 0;
@@ -850,10 +855,34 @@
     .timeline-entry {
       display: flex;
       gap: 0.75rem;
+      margin: 0 0.5rem;
+    }
+
+    .timeline-entry.pm {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+
+    .timeline-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      align-self: flex-start;
+      margin-top: 0.35rem;
+    }
+
+    .timeline-body {
+      flex: 1;
+      min-width: 0;
       background: var(--slate-100);
-      border-radius: 10px;
-      padding: 0.75rem;
-      align-items: flex-start;
+      border-radius: 16px;
+      padding: 0.75rem 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timeline-entry.pm .timeline-body {
+      background: var(--emerald-50);
+      border: 1px solid var(--accent-color);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
     }
 
     .timeline-icon {
@@ -1838,6 +1867,8 @@
       const actions = document.getElementById('statusActions');
       const resultLink = document.getElementById('resultLink');
 
+      const discussionPhase = document.getElementById('discussionPhase');
+
       if (status.status === 'running' || status.status === 'initializing') {
         icon.className = 'status-icon status-icon--running';
         icon.textContent = '⚡';
@@ -1846,6 +1877,9 @@
         message.textContent = status.progress || 'Processing...';
         progressBar.style.width = '60%';
         actions.style.display = 'none';
+        if (discussionPhase) {
+          discussionPhase.classList.remove('completed');
+        }
       } else if (status.status === 'completed') {
         icon.className = 'status-icon status-icon--completed';
         icon.textContent = '✅';
@@ -1878,6 +1912,9 @@
         } else {
           actions.style.display = 'none';
         }
+        if (discussionPhase) {
+          discussionPhase.classList.add('completed');
+        }
       } else if (status.status === 'failed') {
         icon.className = 'status-icon status-icon--failed';
         icon.textContent = '❌';
@@ -1886,6 +1923,9 @@
         message.textContent = status.error || 'Unknown error';
         progressBar.style.width = '0%';
         actions.style.display = 'none';
+        if (discussionPhase) {
+          discussionPhase.classList.remove('completed');
+        }
       }
     }
 
@@ -1951,6 +1991,7 @@
       return {
         icon: roleMatch.icon,
         role: roleMatch.label,
+        roleId: roleMatch.id,
         message
       };
     }
@@ -1978,7 +2019,7 @@
         return;
       }
       list.innerHTML = timelineEntries.map(entry => `
-        <div class="timeline-entry">
+        <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''}">
           <div class="timeline-icon">${entry.icon}</div>
           <div class="timeline-body">
             <div class="timeline-role">${entry.role}</div>
