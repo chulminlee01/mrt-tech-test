@@ -321,6 +321,18 @@ def _call_llm_text(llm, prompt: str) -> str:
     return str(response)
 
 
+def _language_hint(language: str) -> str:
+    """Instruction telling the LLM to answer in the requested language (skip English)."""
+    if not language:
+        return ""
+    lang = language.strip()
+    if not lang:
+        return ""
+    if lang.lower().startswith("english"):
+        return ""
+    return f"Please respond in {lang}."
+
+
 def _google_cse_available() -> bool:
     """Return True if Google CSE credentials and tool import are ready."""
     return (
@@ -383,6 +395,7 @@ def _run_simple_pipeline(
     )
     _log(kickoff)
     
+    language_hint = _language_hint(language)
     # Research summary
     _log("🔍 [Research Analyst] Investigating best practices...")
     cse_insights = _fetch_google_cse_insights(job_role, job_level)
@@ -398,6 +411,8 @@ Include sections:
 **Evaluation Criteria**
 **Recommendations for Myrealtrip**
 """
+    if language_hint:
+        research_prompt += f"\n{language_hint}\n"
     if cse_insights:
         research_prompt += "\nUse these live Google CSE findings as cited evidence:\n"
         research_prompt += cse_insights
@@ -434,6 +449,8 @@ Return format:
 Research:
 {research_summary}
 """
+    if language_hint:
+        skills_prompt += f"\n{language_hint}\n"
     skill_focus = _call_llm_text(llm, skills_prompt)
     _log(skill_focus)
     
@@ -450,6 +467,8 @@ Based on these skills for a {job_role} test:
 List 3 specific JSON datasets (e.g., hotels.json, user_bookings.json) that would be realistic for an OTA technical test.
 Just list the filenames and 1 sentence description for each.
 """
+    if language_hint:
+        data_prompt += f"\n{language_hint}\n"
     data_plan = _call_llm_text(llm, data_prompt)
     _log(f"I recommend generating these datasets:\n{data_plan}")
 
@@ -462,6 +481,8 @@ Datasets: {data_plan}
 
 Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1-sentence justification.
 """
+    if language_hint:
+        qa_prompt += f"\n{language_hint}\n"
     qa_decision = _call_llm_text(llm, qa_prompt)
     _log(f"[QA] {qa_decision}")
     

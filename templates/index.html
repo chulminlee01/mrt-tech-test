@@ -1552,6 +1552,15 @@
     const agentFocusLabel = document.getElementById('agentFocusLabel');
     const agentFocusText = document.getElementById('agentFocusText');
     
+    function resetAgentFocus() {
+      lastAgentFocusId = null;
+      if (agentFocusHideTimer) {
+        clearTimeout(agentFocusHideTimer);
+        agentFocusHideTimer = null;
+      }
+      updateAgentFocus(null);
+    }
+    
     // Agent definitions (7 agents: 4 CrewAI + 3 post-processing)
     const agents = [
       {id: "pm", name: "Product Manager", icon: "👔", role: "Team Leader & Coordinator"},
@@ -1845,7 +1854,7 @@
       renderTimeline();
       renderTimelineModal();
       hideLongTaskBanner();
-      updateAgentFocus(null);
+      resetAgentFocus();
 
       const discussionPhase = document.getElementById('discussionPhase');
       if (discussionPhase) {
@@ -2046,6 +2055,7 @@
         }
       } else if (status.status === 'completed') {
         hideLongTaskBanner();
+        resetAgentFocus();
         ensureDiscussionPhaseVisible();
         icon.className = 'status-icon status-icon--completed';
         icon.textContent = '✅';
@@ -2087,6 +2097,7 @@
         }
       } else if (status.status === 'failed') {
         hideLongTaskBanner();
+        resetAgentFocus();
         ensureDiscussionPhaseVisible();
         activeAgentId = null;
         icon.className = 'status-icon status-icon--failed';
@@ -2358,6 +2369,8 @@
           message = 'Generating starter code package… this can take up to a minute.';
         } else if (normalized.some(line => line.includes('styling'))) {
           message = 'Applying custom portal styling… almost ready.';
+        } else if (normalized.some(line => line.includes('assignment generator is crafting'))) {
+          message = 'Assignment Generator is crafting scenario variations… thank you for waiting.';
         } else if (normalized.some(line => line.includes('finalizing'))) {
           message = 'Finalizing datasets and portal assets… please keep this tab open.';
         }
