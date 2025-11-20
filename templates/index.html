@@ -856,6 +856,7 @@
       display: flex;
       gap: 0.75rem;
       margin: 0 0.5rem;
+      align-items: flex-start;
     }
 
     .timeline-entry.pm {
@@ -873,38 +874,41 @@
     .timeline-body {
       flex: 1;
       min-width: 0;
-      background: var(--slate-100);
+      background: #1f2937;
       border-radius: 16px;
-      padding: 0.75rem 1rem;
-      box-shadow: var(--shadow-sm);
+      padding: 0.85rem 1.1rem;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.35);
+      color: #e2e8f0;
     }
 
     .timeline-entry.pm .timeline-body {
-      background: var(--emerald-50);
-      border: 1px solid var(--accent-color);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+      background: #0f172a;
+      border: 1px solid rgba(16, 185, 129, 0.6);
     }
 
-    .timeline-icon {
-      font-size: 1.4rem;
-      line-height: 1;
-    }
-
-    .timeline-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .timeline-role {
+    .timeline-role-label {
       font-weight: 600;
-      color: var(--text-color);
-      margin-bottom: 0.25rem;
+      font-family: 'SFMono-Regular', ui-monospace, 'Roboto Mono', Menlo, monospace;
+      color: #34d399;
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.3px;
     }
 
-    .timeline-message {
-      color: var(--gray-color);
-      font-size: 0.9rem;
-      line-height: 1.4;
+    .timeline-entry.pm .timeline-role-label {
+      color: #a5b4fc;
+    }
+
+    .timeline-text {
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .timeline-entry.task .timeline-body {
+      background: #374151;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      text-align: center;
+      font-style: italic;
+      color: #f1f5f9;
     }
     
     .logs-container::-webkit-scrollbar {
@@ -1220,8 +1224,8 @@
           <div class="timeline-entry">
             <div class="timeline-icon">ℹ️</div>
             <div class="timeline-body">
-              <div class="timeline-role">Waiting for updates...</div>
-              <div class="timeline-message">Timeline will appear as soon as the crew starts collaborating.</div>
+              <div class="timeline-role-label">[System]</div>
+              <div class="timeline-text">Timeline will appear as soon as the crew starts collaborating.</div>
             </div>
           </div>
         </div>
@@ -1982,6 +1986,25 @@
       if (normalized.includes('[api]') || normalized.includes('status check')) {
         return null;
       }
+
+      const isTaskAnnouncement =
+        normalized.startsWith('task:') ||
+        normalized.startsWith('new task:') ||
+        normalized.includes('task: ') ||
+        normalized.startsWith('phase');
+
+      if (isTaskAnnouncement) {
+        const taskMessage = formatTaskMessage(log);
+        if (!taskMessage) return null;
+        return {
+          icon: '📝',
+          role: 'Task Update',
+          roleId: 'task',
+          message: taskMessage,
+          type: 'task'
+        };
+      }
+
       const roleMatch = timelineRoles.find(role =>
         role.keywords.some(keyword => normalized.includes(keyword))
       );
@@ -1992,7 +2015,8 @@
         icon: roleMatch.icon,
         role: roleMatch.label,
         roleId: roleMatch.id,
-        message
+        message,
+        type: 'chat'
       };
     }
 
@@ -2003,6 +2027,11 @@
       return cleaned;
     }
 
+    function formatTaskMessage(text) {
+      if (!text) return '';
+      return text.replace(/\s+/g, ' ').trim();
+    }
+
     function renderTimeline() {
       const list = document.getElementById('timelineList');
       if (!list) return;
@@ -2011,23 +2040,22 @@
           <div class="timeline-entry">
             <div class="timeline-icon">ℹ️</div>
             <div class="timeline-body">
-              <div class="timeline-role">Waiting for updates...</div>
-              <div class="timeline-message">Timeline will appear as soon as the crew starts collaborating.</div>
+              <div class="timeline-role-label">[System]</div>
+              <div class="timeline-text">Timeline will appear as soon as the crew starts collaborating.</div>
             </div>
           </div>
         `;
         return;
       }
       list.innerHTML = timelineEntries.map(entry => `
-        <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''}">
+        <div class="timeline-entry ${entry.roleId === 'pm' ? 'pm' : ''} ${entry.type === 'task' ? 'task' : ''}">
           <div class="timeline-icon">${entry.icon}</div>
           <div class="timeline-body">
-            <div class="timeline-role">${entry.role}</div>
-            <div class="timeline-message">${entry.message}</div>
+            <div class="timeline-role-label">[${entry.role}]</div>
+            <div class="timeline-text">${entry.message}</div>
           </div>
         </div>
       `).join('');
-      list.scrollTop = list.scrollHeight;
     }
 
     // Load recent jobs on page load
