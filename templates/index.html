@@ -1298,31 +1298,6 @@
         <!-- Agents will be populated here -->
       </div>
       
-      <!-- Agent Activity Boxes (Fixed Grid) -->
-      <div class="activities-section">
-        <div class="activities-title">💬 Agent Activity & Thinking</div>
-        <div class="activities-grid" id="activitiesGrid">
-          <!-- Activity boxes will be populated here -->
-        </div>
-      </div>
-      
-      <!-- Activity Modal (for expanded view) -->
-      <div class="activity-modal" id="activityModal">
-        <div class="activity-modal-content">
-          <div class="activity-modal-header">
-            <span class="activity-modal-icon" id="modalIcon">🤖</span>
-            <div class="activity-modal-title">
-              <div class="activity-modal-name" id="modalName">Agent Name</div>
-              <div class="activity-modal-role" id="modalRole">Role</div>
-            </div>
-            <button class="activity-modal-close" onclick="closeActivityModal()">×</button>
-          </div>
-          <div class="activity-modal-body" id="modalBody">
-            Full conversation details will appear here...
-          </div>
-        </div>
-      </div>
-      
       <!-- Discussion Phase -->
       <div class="discussion-phase" id="discussionPhase">
         <div class="discussion-title">
@@ -1511,76 +1486,6 @@
       card.classList.add(status);
     }
 
-    function parseAgentConversations(logs) {
-      if (!logs || logs.length === 0) return {};
-      
-      const conversations = {
-        pm: [],
-        researcher: [],
-        designer: [],
-        reviewer: [],
-        data: [],
-        builder: [],
-        styler: []
-      };
-      
-      const allLogs = logs.join('\n');
-      
-      // Parse agent-specific messages with [Agent Name] format
-      const agentPatterns = [
-        { id: 'pm', pattern: /👔\s*\[PM\].*?(?=(?:👔\s*\[PM\]|🔍\s*\[Research|✏️\s*\[Assignment|🔎\s*\[QA|📝\s*\[Technical|$))/gs },
-        { id: 'pm', pattern: /\[Product Manager\].*?(?=\[|$)/gs },
-        { id: 'researcher', pattern: /🔍\s*\[Research.*?\].*?(?=(?:👔\s*\[PM\]|🔍\s*\[Research|✏️\s*\[Assignment|🔎\s*\[QA|$))/gs },
-        { id: 'designer', pattern: /✏️\s*\[Assignment.*?\].*?(?=(?:👔\s*\[PM\]|🔍\s*\[Research|✏️\s*\[Assignment|🔎\s*\[QA|$))/gs },
-        { id: 'reviewer', pattern: /🔎\s*\[QA.*?\].*?(?=(?:👔\s*\[PM\]|🔍\s*\[Research|✏️\s*\[Assignment|🔎\s*\[QA|$))/gs },
-      ];
-      
-      // Also detect by keywords if no brackets
-      logs.forEach((log, idx) => {
-        const lower = log.toLowerCase();
-        
-        if (lower.includes('[pm]') || lower.includes('product manager')) {
-          conversations.pm.push(log);
-        } else if (lower.includes('[research') || lower.includes('research analyst') || lower.includes('searching google cse')) {
-          conversations.researcher.push(log);
-        } else if (lower.includes('[assignment') || lower.includes('assignment designer') || lower.includes('generating assignments')) {
-          conversations.designer.push(log);
-        } else if (lower.includes('[qa') || lower.includes('qa reviewer') || lower.includes('reviewing quality')) {
-          conversations.reviewer.push(log);
-        } else if (lower.includes('dataset') || lower.includes('data provider') || lower.includes('generating datasets')) {
-          conversations.data.push(log);
-        } else if (lower.includes('starter code') || lower.includes('generating starter')) {
-          conversations.designer.push(log);  // Starter code with designer
-        } else if (lower.includes('web page') || lower.includes('web builder') || lower.includes('building web portal') || lower.includes('index.html')) {
-          conversations.builder.push(log);
-        } else if (lower.includes('css saved') || lower.includes('web designer') || lower.includes('applying custom styling') || lower.includes('styles.css')) {
-          conversations.styler.push(log);
-        }
-      });
-      
-      return conversations;
-    }
-    
-    function updateActivityBoxes(conversations) {
-      // Update each agent's activity box with formatted summary
-      Object.entries(conversations).forEach(([agentId, messages]) => {
-        const summaryEl = document.getElementById(`summary-${agentId}`);
-        const badgeEl = document.getElementById(`status-badge-${agentId}`);
-        const boxEl = document.getElementById(`activity-${agentId}`);
-        
-        if (!summaryEl || !badgeEl || !boxEl) return;
-        
-        // Store full logs for modal
-        agentFullLogs[agentId] = messages.join('\n');
-        
-        if (messages.length > 0) {
-          // Update summary with HTML formatting
-          const summaryHTML = summarizeAgentActivity(messages);
-          summaryEl.innerHTML = summaryHTML;
-          badgeEl.textContent = 'Active';
-        }
-      });
-    }
     
     function detectActiveAgent(logs) {
       if (!logs || logs.length === 0) return 'pm';
@@ -1668,171 +1573,8 @@
       timelineEntries = [];
       renderTimeline();
       renderTimelineModal();
-      
-      // Initialize activity boxes
-      initializeActivityBoxes();
     }
     
-    function initializeActivityBoxes() {
-      const grid = document.getElementById('activitiesGrid');
-      grid.innerHTML = agents.map(agent => `
-        <div class="activity-box" id="activity-${agent.id}" onclick="openActivityModal('${agent.id}')" data-agent-id="${agent.id}">
-          <div class="activity-header">
-            <span class="activity-icon">${agent.icon}</span>
-            <div class="activity-agent-info">
-              <div class="activity-agent-name">${agent.name}</div>
-              <span class="activity-status-badge" id="status-badge-${agent.id}">Waiting</span>
-            </div>
-          </div>
-          <div class="activity-summary" id="summary-${agent.id}">
-            <div class="activity-empty">Not started yet...</div>
-          </div>
-          <div class="activity-expand-hint">Click to expand →</div>
-        </div>
-      `).join('');
-    }
-    
-    let agentFullLogs = {};
-    
-    function openActivityModal(agentId) {
-      const agent = agents.find(a => a.id === agentId);
-      if (!agent) return;
-      
-      const modal = document.getElementById('activityModal');
-      document.getElementById('modalIcon').textContent = agent.icon;
-      document.getElementById('modalName').textContent = agent.name;
-      document.getElementById('modalRole').textContent = agent.role;
-      
-      // Format the full conversation with styling
-      const rawMessages = (agentFullLogs[agentId] || '').split('\n');
-      const formattedContent = formatFullConversation(rawMessages, agentId);
-      document.getElementById('modalBody').innerHTML = formattedContent;
-      
-      modal.classList.add('visible');
-    }
-    
-    function closeActivityModal() {
-      document.getElementById('activityModal').classList.remove('visible');
-    }
-    
-    // Close modal on outside click
-    document.getElementById('activityModal')?.addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeActivityModal();
-      }
-    });
-    
-    function formatAgentMessage(text, agentId) {
-      // Format agent message with proper styling
-      const agentMap = {
-        pm: {icon: '👔', name: 'PM', class: 'pm'},
-        researcher: {icon: '🔍', name: 'Research Analyst', class: 'researcher'},
-        designer: {icon: '✏️', name: 'Assignment Designer', class: 'designer'},
-        reviewer: {icon: '🔎', name: 'QA Reviewer', class: 'reviewer'},
-        data: {icon: '📊', name: 'Data Provider', class: 'data'},
-        builder: {icon: '🌐', name: 'Web Builder', class: 'builder'},
-        styler: {icon: '🎨', name: 'Web Designer', class: 'designer'}
-      };
-      
-      const agent = agentMap[agentId] || {icon: '🤖', name: 'Agent', class: 'default'};
-      
-      return `
-        <div class="agent-message ${agent.class}">
-          <div class="agent-speaker">
-            <span class="agent-speaker-icon">${agent.icon}</span>
-            <span>${agent.name}</span>
-          </div>
-          <div>${text}</div>
-        </div>
-      `;
-    }
-    
-    function summarizeAgentActivity(messages) {
-      if (!messages || messages.length === 0) return '<div class="activity-empty">Not started yet...</div>';
-      
-      // Take last 3-5 meaningful lines as summary
-      const meaningful = messages.filter(m => {
-        const trimmed = m.trim();
-        return trimmed.length > 10 && 
-               !trimmed.match(/^═+$/) && 
-               !trimmed.match(/^─+$/) &&
-               !trimmed.startsWith('╭') &&
-               !trimmed.startsWith('╰') &&
-               !trimmed.includes('Crew Execution') &&
-               !trimmed.includes('Task Completion');
-      });
-      
-      if (meaningful.length === 0) return '<div class="activity-empty">Processing...</div>';
-      
-      // Get last 3 lines or recent activity
-      const recentLines = meaningful.slice(-3);
-      
-      // Format each line
-      let html = '';
-      recentLines.forEach(line => {
-        // Check if it's a task start
-        if (line.includes('Task:') || line.includes('📋')) {
-          html += `<div class="task-label">${line}</div>`;
-        } else {
-          html += `<div>${line}</div>`;
-        }
-      });
-      
-      // Truncate if too long
-      if (html.length > 300) {
-        html = html.substring(0, 297) + '...';
-      }
-      
-      return html || '<div class="activity-empty">Processing...</div>';
-    }
-    
-    function formatFullConversation(messages, agentId) {
-      // Format full conversation with task separators and agent markers
-      if (!messages || messages.length === 0) return 'No activity yet...';
-      
-      let html = '';
-      let currentTask = null;
-      
-      messages.forEach((msg, idx) => {
-        const trimmed = msg.trim();
-        if (!trimmed) return;
-        
-        // Detect task changes
-        if (trimmed.includes('Task:') && !trimmed.includes('Completion')) {
-          if (currentTask !== null) {
-            html += '<div class="task-separator"></div>';
-          }
-          html += `<div class="task-label">📋 ${trimmed}</div>`;
-          currentTask = trimmed;
-          return;
-        }
-        
-        // Skip decorative lines
-        if (trimmed.match(/^[─═│╭╮╯╰├┤┬┴┼\s]+$/) || 
-            trimmed.includes('Crew Execution') ||
-            trimmed.includes('Memory Retrieval')) {
-          return;
-        }
-        
-        // Format agent messages
-        if (trimmed.startsWith('👔') || trimmed.includes('[PM]')) {
-          html += formatAgentMessage(trimmed.replace(/^👔\s*/, '').replace('[PM]', '').trim(), 'pm');
-        } else if (trimmed.startsWith('🔍') || trimmed.includes('[Research')) {
-          html += formatAgentMessage(trimmed.replace(/^🔍\s*/, '').replace(/\[Research.*?\]/, '').trim(), 'researcher');
-        } else if (trimmed.startsWith('✏️') || trimmed.includes('[Assignment')) {
-          html += formatAgentMessage(trimmed.replace(/^✏️\s*/, '').replace(/\[Assignment.*?\]/, '').trim(), 'designer');
-        } else if (trimmed.startsWith('🔎') || trimmed.includes('[QA')) {
-          html += formatAgentMessage(trimmed.replace(/^🔎\s*/, '').replace(/\[QA.*?\]/, '').trim(), 'reviewer');
-        } else if (trimmed.startsWith('📝') || trimmed.includes('[Technical')) {
-          html += formatAgentMessage(trimmed.replace(/^📝\s*/, '').replace(/\[Technical.*?\]/, '').trim(), 'writer');
-        } else {
-          // Regular message
-          html += `<div style="margin: 0.25rem 0;">${trimmed}</div>`;
-        }
-      });
-      
-      return html || 'No activity yet...';
-    }
 
     function startStatusPolling() {
       // Clear any existing intervals
@@ -1947,48 +1689,11 @@
       container.scrollTop = container.scrollHeight;
       updateTimelineEntries(newLogLines);
       
-      // Parse and display agent activity in boxes
-      const conversations = parseAgentConversations(logs);
-      updateActivityBoxes(conversations);
-      
-      // Update agent status based on logs
+      // Update active agent for timeline indicator
       const activeAgent = detectActiveAgent(logs);
-      const allLogsText = logs.join(' ').toLowerCase();
-      
       agents.forEach(agent => {
-        const activityBox = document.getElementById(`activity-${agent.id}`);
-        const statusBadge = document.getElementById(`status-badge-${agent.id}`);
-        
-        // Remove active class first
-        if (activityBox) {
-          activityBox.classList.remove('active');
-        }
-        
-        // Check if this is the currently active agent
         if (agent.id === activeAgent) {
           updateAgentStatus(agent.id, 'active');
-          if (activityBox) activityBox.classList.add('active');
-          if (statusBadge) statusBadge.textContent = 'ACTIVE NOW';
-        } 
-        // Check if agent completed their work (specific completion markers)
-        else if (
-          (agent.id === 'pm' && allLogsText.includes('decision: approved')) ||
-          (agent.id === 'researcher' && allLogsText.includes('research') && allLogsText.includes('summary')) ||
-          (agent.id === 'designer' && allLogsText.includes('assignments') && (allLogsText.includes('saved') || allLogsText.includes('generated'))) ||
-          (agent.id === 'reviewer' && allLogsText.includes('approved')) ||
-          (agent.id === 'data' && allLogsText.includes('dataset generation complete')) ||
-          (agent.id === 'builder' && allLogsText.includes('web page generated')) ||
-          (agent.id === 'styler' && allLogsText.includes('css saved'))
-        ) {
-          updateAgentStatus(agent.id, 'completed');
-          if (activityBox) activityBox.classList.add('completed');
-          if (activityBox) activityBox.classList.remove('active');
-          if (statusBadge) statusBadge.textContent = 'Completed ✅';
-        }
-        // Agent has some activity but not active now
-        else if (conversations[agent.id] && conversations[agent.id].length > 0) {
-          if (statusBadge) statusBadge.textContent = 'Working';
-          if (activityBox) activityBox.classList.remove('active', 'completed');
         }
       });
       
