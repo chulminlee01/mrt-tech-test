@@ -1308,29 +1308,29 @@
           Agents are collaborating and reviewing outputs...
         </div>
       </div>
-
+      
       <div class="timeline-section">
         <div class="timeline-title">
           <span>🕒 Crew Discussion Timeline</span>
           <button class="timeline-expand-btn" onclick="openTimelineModal()">View Full Discussion</button>
-        </div>
+            </div>
         <div class="timeline-list" id="timelineList">
           <div class="timeline-entry">
             <div class="timeline-icon">ℹ️</div>
             <div class="timeline-body">
               <div class="timeline-role-label">[System]</div>
               <div class="timeline-text">Timeline will appear as soon as the crew starts collaborating.</div>
-            </div>
+          </div>
           </div>
         </div>
       </div>
-
+      
       <div class="timeline-modal" id="timelineModal">
         <div class="timeline-modal-content">
           <div class="timeline-modal-header">
             <div>🗂️ Full Crew Discussion</div>
             <button class="timeline-modal-close" onclick="closeTimelineModal()">×</button>
-          </div>
+        </div>
           <div class="timeline-modal-body" id="timelineModalBody">
           </div>
         </div>
@@ -1349,7 +1349,7 @@
           <div class="logs-empty" id="logsEmpty">Waiting for agents to start...</div>
         </div>
       </div>
-
+      
       <div id="statusActions" style="text-align: center; display: none;">
         <a href="#" id="resultLink" class="result-link" target="_blank">
           📄 View Generated Tech Test
@@ -1401,6 +1401,7 @@
       { id: 'qa', label: 'QA Reviewer', icon: '🔎', keywords: ['[qa', 'qa reviewer', 'approved'] }
     ];
     let activeAgentId = null;
+    let backendActiveAgentId = null;
     const timelineModal = document.getElementById('timelineModal');
     const timelineModalBody = document.getElementById('timelineModalBody');
     const discussionTitleText = document.getElementById('discussionTitleText');
@@ -1494,12 +1495,40 @@
       card.classList.remove('pending', 'active', 'reviewing', 'completed');
       
       // Add new status class
-      card.classList.add(status);
+      const allowedStatuses = ['pending', 'active', 'reviewing', 'completed'];
+      const appliedStatus = allowedStatuses.includes(status) ? status : 'pending';
+      card.classList.add(appliedStatus);
+    }
+    
+    function applyAgentStatuses(statusMap) {
+      if (!statusMap || typeof statusMap !== 'object') return;
+      agents.forEach(agent => {
+        const state = statusMap[agent.id] || 'pending';
+        updateAgentStatus(agent.id, state);
+      });
+    }
+    
+    function setActiveAgent(agentId, source = 'logs') {
+      if (source === 'status') {
+        backendActiveAgentId = agentId || null;
+      } else if (backendActiveAgentId && backendActiveAgentId !== agentId) {
+        return;
+      }
+      
+      if (activeAgentId === agentId) {
+        return;
+      }
+      
+      activeAgentId = agentId || null;
+      renderTimeline();
+      if (timelineModal && timelineModal.classList.contains('visible')) {
+        renderTimelineModal();
+      }
     }
 
     
     function detectActiveAgent(logs) {
-      if (!logs || logs.length === 0) return 'pm';
+      if (!logs || logs.length === 0) return null;
       
       // Check recent logs to determine active agent
       const recentLogs = logs.slice(-5).join(' ').toLowerCase();
@@ -1706,21 +1735,10 @@
       container.scrollTop = container.scrollHeight;
       updateTimelineEntries(newLogLines);
       
-      // Update active agent for timeline indicator
+      // Update active agent for timeline indicator (fallback if backend hasn't updated yet)
       const activeAgent = detectActiveAgent(logs);
-      if (activeAgent) {
-        if (activeAgentId !== activeAgent) {
-          activeAgentId = activeAgent;
-          renderTimeline();
-          if (timelineModal && timelineModal.classList.contains('visible')) {
-            renderTimelineModal();
-          }
-        }
-        agents.forEach(agent => {
-          if (agent.id === activeAgent) {
-            updateAgentStatus(agent.id, 'active');
-          }
-        });
+      if (!backendActiveAgentId) {
+        setActiveAgent(activeAgent || null, 'logs');
       }
       
       // Show discussion phase if detected
@@ -1753,7 +1771,7 @@
 
       const discussionPhase = document.getElementById('discussionPhase');
       const discussionContent = document.getElementById('discussionContent');
-      activeAgentId = status.active_agent || null;
+      const backendAgentStatusMap = status.agent_status || {};
 
       if (status.status === 'running' || status.status === 'initializing') {
         icon.className = 'status-icon status-icon--running';
@@ -1773,7 +1791,6 @@
           discussionContent.textContent = status.progress || 'Agents are collaborating and reviewing outputs...';
         }
       } else if (status.status === 'completed') {
-        activeAgentId = null;
         icon.className = 'status-icon status-icon--completed';
         icon.textContent = '✅';
         title.textContent = 'Generation Complete!';
@@ -1781,15 +1798,6 @@
         message.textContent = status.progress || 'Successfully generated all assets including research, assignments, datasets, starter code, and portal.';
         progressBar.style.width = '100%';
         subtitle.textContent = '🎉 Portal approved and ready for candidates!';
-        
-        // Mark all agents as completed
-        agents.forEach(agent => {
-          updateAgentStatus(agent.id, 'completed');
-          const activityBox = document.getElementById(`activity-${agent.id}`);
-          const statusBadge = document.getElementById(`status-badge-${agent.id}`);
-          if (activityBox) activityBox.classList.add('completed');
-          if (statusBadge) statusBadge.textContent = 'Completed ✅';
-        });
         
         let portalLink = status.index_url || '';
         if (!portalLink && status.output_dir) {
@@ -1840,8 +1848,16 @@
           discussionContent.textContent = status.error || 'The crew encountered an error. Please review logs and retry.';
         }
       }
-      renderTimeline();
-      renderTimelineModal();
+      
+      if (status.status === 'completed') {
+        const completedMap = {};
+        agents.forEach(agent => { completedMap[agent.id] = 'completed'; });
+        applyAgentStatuses(completedMap);
+      } else if (backendAgentStatusMap && Object.keys(backendAgentStatusMap).length > 0) {
+        applyAgentStatuses(backendAgentStatusMap);
+      }
+      
+      setActiveAgent(status.active_agent || null, 'status');
     }
 
     async function loadRecentJobs() {

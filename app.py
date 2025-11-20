@@ -77,11 +77,11 @@ class LogCapture(io.StringIO):
         agent_status = generation_status[self.job_id].get('agent_status', {})
 
         def set_progress(label, agent_id=None):
+            if agent_id:
+                generation_status[self.job_id]['active_agent'] = agent_id
             if generation_status[self.job_id].get('progress') == label:
                 return
             generation_status[self.job_id]['progress'] = label
-            if agent_id:
-                generation_status[self.job_id]['active_agent'] = agent_id
         
         # PM phases
         if '[pm]' in text_lower and ('kick' in text_lower or 'project' in text_lower):
@@ -304,7 +304,8 @@ def run_generation(job_id, job_role, job_level, language):
                 "output_dir": str(job_dir),
                 "completed_at": datetime.now().isoformat(),
                 "index_url": f"/output/{job_dir.name}/index.html",
-                "portal_ready": True
+                "portal_ready": True,
+                "active_agent": None
             })
             print(f"🎉 Portal ready at: /output/{job_dir.name}/index.html")
         else:
@@ -313,7 +314,8 @@ def run_generation(job_id, job_role, job_level, language):
                 "progress": "Generation complete (assets created, portal pending)",
                 "output_dir": str(job_dir),
                 "completed_at": datetime.now().isoformat(),
-                "portal_ready": False
+                "portal_ready": False,
+                "active_agent": None
             })
             print(f"⚠️  Portal not found at: {portal_path}")
         
@@ -328,7 +330,8 @@ def run_generation(job_id, job_role, job_level, language):
             "progress": f"Error: {str(e)}",
             "error": str(e),
             "error_trace": error_trace,
-            "failed_at": datetime.now().isoformat()
+            "failed_at": datetime.now().isoformat(),
+            "active_agent": None
         })
     finally:
         # Restore stdout/stderr
