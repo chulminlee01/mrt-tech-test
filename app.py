@@ -284,11 +284,11 @@ def run_generation(job_id, job_role, job_level, language):
             except Exception as e:
                 print(f"⚠️  Web designer error: {e}", flush=True)
         
-        # Success
-        portal_ready = result.get("portal_ready", False)
+        # Success - Always check if portal exists after generation
         portal_path = Path(job_dir) / "index.html"
+        portal_exists = portal_path.exists()
         
-        if portal_ready and portal_path.exists():
+        if portal_exists:
             generation_status[job_id].update({
                 "status": "completed",
                 "progress": "✅ Tech test complete! Portal ready for candidates.",
@@ -301,11 +301,12 @@ def run_generation(job_id, job_role, job_level, language):
         else:
             generation_status[job_id].update({
                 "status": "completed",
-                "progress": "Generation complete (portal creation in progress)",
+                "progress": "Generation complete (assets created, portal pending)",
                 "output_dir": str(job_dir),
                 "completed_at": datetime.now().isoformat(),
                 "portal_ready": False
             })
+            print(f"⚠️  Portal not found at: {portal_path}")
         
     except Exception as e:
         import traceback

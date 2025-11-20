@@ -162,7 +162,7 @@ def run_question_generator(
     report_path = Path(input_path)
     research_summary = _ensure_report_exists(report_path)
 
-    temp_val = temperature if temperature is not None else float(os.getenv("OPENAI_TEMPERATURE", "0.35"))
+    temp_val = temperature if temperature is not None else float(os.getenv("OPENAI_TEMPERATURE", "0.2"))
     
     # Use direct NVIDIA if available (bypasses LiteLLM)
     if os.getenv("NVIDIA_API_KEY") and not model:
@@ -325,10 +325,27 @@ JSON Schema:
         debug_path.write_text(raw_json, encoding="utf-8")
         cleaned_path = Path(output_path).with_suffix(".cleaned.json")
         cleaned_path.write_text(cleaned_json, encoding="utf-8")
-        raise ValueError(
-            "Failed to parse assignments JSON. Raw output saved to "
-            f"{debug_path} (raw) and {cleaned_path} (cleaned)."
-        ) from exc
+        
+        # Try one more aggressive cleanup
+        print(f"⚠️  Initial JSON parse failed, attempting aggressive cleanup...")
+        import re
+        # Try to extract just the assignments array if present
+        array_match = re.search(r'"assignments"\s*:\s*\[([\s\S]*)\]', cleaned_json)
+        if array_match:
+            try:
+                fallback = '{"assignments": [' + array_match.group(1) + ']}'
+                parsed = json.loads(fallback)
+                print(f"✅ Recovered JSON using fallback extraction")
+            except:
+                raise ValueError(
+                    "Failed to parse assignments JSON. Raw output saved to "
+                    f"{debug_path} (raw) and {cleaned_path} (cleaned)."
+                ) from exc
+        else:
+            raise ValueError(
+                "Failed to parse assignments JSON. Raw output saved to "
+                f"{debug_path} (raw) and {cleaned_path} (cleaned)."
+            ) from exc
 
     sanitized = _sanitize_structure(parsed)
     sanitized["company"] = company_name
