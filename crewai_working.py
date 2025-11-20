@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 
 # Optional import - only needed if using Google Search
 try:
-    from agent_researcher import recent_google_search
+from agent_researcher import recent_google_search
     GOOGLE_SEARCH_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Google Search not available (import error): {e}")
@@ -497,7 +497,7 @@ def generate_with_crewai(
             output_dir=output_dir
         )
     
-    print("🧠 Using Full CrewAI Collaboration Pipeline")
+    print("🧠 Using Full CrewAI Collaboration Pipeline (Hierarchical)")
     return _run_crewai_classic(
         job_role=job_role,
         job_level=job_level,
