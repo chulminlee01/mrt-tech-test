@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 
 # Optional import - only needed if using Google Search
 try:
-from agent_researcher import recent_google_search
+    from agent_researcher import recent_google_search
     GOOGLE_SEARCH_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Google Search not available (import error): {e}")
@@ -61,9 +61,9 @@ class GoogleCSETool(BaseTool):
         
         print(f"\n🔍 [Research Analyst] Executing Google CSE search: '{query[:60]}...'\n", flush=True)
         try:
-        result = recent_google_search(query)
-        print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
-        return result
+            result = recent_google_search(query)
+            print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
+            return result
         except Exception as e:
             print(f"\n⚠️  [Research Analyst] Search failed: {e}\n", flush=True)
             return f"Search failed. Using general knowledge about {query}."
@@ -268,30 +268,30 @@ def _run_crewai_classic(
     
     print("\n📝 Phase 2: Generating Assets based on Crew Plan")
     
-        from agent_question_generator import run_question_generator
-        run_question_generator(
-            job_role=job_role,
-            job_level=job_level,
+    from agent_question_generator import run_question_generator
+    run_question_generator(
+        job_role=job_role,
+        job_level=job_level,
         company_name="Myrealtrip OTA",
-            input_path=CURRENT_RESEARCH_PATH,
-            output_path=CURRENT_ASSIGNMENTS_PATH,
-            language=language
-        )
+        input_path=CURRENT_RESEARCH_PATH,
+        output_path=CURRENT_ASSIGNMENTS_PATH,
+        language=language
+    )
     
     datasets_dir = str(output_dir / "datasets")
-            run_data_provider(
-                assignments_path=CURRENT_ASSIGNMENTS_PATH,
+    run_data_provider(
+        assignments_path=CURRENT_ASSIGNMENTS_PATH,
         output_dir=datasets_dir,
-                language=language
-            )
-        
-            run_web_builder(
-                assignments_path=CURRENT_ASSIGNMENTS_PATH,
-                research_summary_path=CURRENT_RESEARCH_PATH,
-                output_html=str(output_dir / "index.html"),
-                language=language,
-                starter_dir=str(output_dir / "starter_code")
-            )
+        language=language
+    )
+    
+    run_web_builder(
+        assignments_path=CURRENT_ASSIGNMENTS_PATH,
+        research_summary_path=CURRENT_RESEARCH_PATH,
+        output_html=str(output_dir / "index.html"),
+        language=language,
+        starter_dir=str(output_dir / "starter_code")
+    )
     
     return {
         "status": "completed",
