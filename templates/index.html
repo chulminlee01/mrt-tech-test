@@ -1619,6 +1619,23 @@
       timelineEntries = [];
       renderTimeline();
       renderTimelineModal();
+
+      const discussionPhase = document.getElementById('discussionPhase');
+      if (discussionPhase) {
+        discussionPhase.classList.add('visible');
+        discussionPhase.classList.remove('completed');
+      }
+      if (discussionTitleText) {
+        discussionTitleText.textContent = 'Team Discussion in Progress';
+      }
+      const discussionContent = document.getElementById('discussionContent');
+      if (discussionContent) {
+        discussionContent.textContent = 'Agents are collaborating and reviewing outputs...';
+      }
+      const actions = document.getElementById('statusActions');
+      if (actions) {
+        actions.style.display = 'none';
+      }
     }
     
 
@@ -1760,6 +1777,13 @@
       }
     }
 
+    function ensureDiscussionPhaseVisible() {
+      const phase = document.getElementById('discussionPhase');
+      if (phase && !phase.classList.contains('visible')) {
+        phase.classList.add('visible');
+      }
+    }
+
     function updateStatusUI(status) {
       const icon = document.getElementById('statusIcon');
       const title = document.getElementById('statusTitle');
@@ -1774,6 +1798,7 @@
       const backendAgentStatusMap = status.agent_status || {};
 
       if (status.status === 'running' || status.status === 'initializing') {
+        ensureDiscussionPhaseVisible();
         icon.className = 'status-icon status-icon--running';
         icon.textContent = '⚡';
         title.textContent = 'Generating...';
@@ -1791,6 +1816,7 @@
           discussionContent.textContent = status.progress || 'Agents are collaborating and reviewing outputs...';
         }
       } else if (status.status === 'completed') {
+        ensureDiscussionPhaseVisible();
         icon.className = 'status-icon status-icon--completed';
         icon.textContent = '✅';
         title.textContent = 'Generation Complete!';
@@ -1830,6 +1856,7 @@
           discussionContent.textContent = 'Discussion closed. All findings and deliverables are finalized.';
         }
       } else if (status.status === 'failed') {
+        ensureDiscussionPhaseVisible();
         activeAgentId = null;
         icon.className = 'status-icon status-icon--failed';
         icon.textContent = '❌';
