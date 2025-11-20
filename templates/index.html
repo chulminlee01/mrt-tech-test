@@ -1032,6 +1032,17 @@
       }
     }
 
+    @keyframes focusPulse {
+      0% { transform: scale(1); box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35); }
+      50% { transform: scale(1.05); box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.55); }
+      100% { transform: scale(1); box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35); }
+    }
+
+    @keyframes focusDots {
+      from { width: 0ch; }
+      to { width: 3ch; }
+    }
+
     .agent-focus {
       display: none;
       margin: 1rem 0 2rem;
@@ -1058,6 +1069,11 @@
       align-items: center;
       justify-content: center;
       box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.45);
+      transition: transform 0.3s ease;
+    }
+
+    .agent-focus.active .agent-focus-icon {
+      animation: focusPulse 1.6s ease-in-out infinite;
     }
 
     .agent-focus-label {
@@ -1071,6 +1087,23 @@
       margin-top: 0.15rem;
       font-size: 0.9rem;
       color: #e0f2fe;
+      position: relative;
+      padding-right: 1.2rem;
+    }
+
+    .agent-focus-text::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 0ch;
+      overflow: hidden;
+      color: #bae6fd;
+    }
+
+    .agent-focus.active .agent-focus-text::after {
+      content: '...';
+      animation: focusDots 1.4s steps(4, end) infinite;
     }
 
     .timeline-modal {
@@ -1506,6 +1539,9 @@
     let activeAgentId = null;
     let longTaskActive = false;
     let backendActiveAgentId = null;
+    const AGENT_FOCUS_HOLD_MS = 4500;
+    let lastAgentFocusId = null;
+    let agentFocusHideTimer = null;
     const timelineModal = document.getElementById('timelineModal');
     const timelineModalBody = document.getElementById('timelineModalBody');
     const discussionTitleText = document.getElementById('discussionTitleText');
@@ -1648,19 +1684,33 @@
       });
     }
     
-    function setActiveAgent(agentId, source = 'logs') {
+    function setActiveAgent(agentId, source = 'logs', contextText = '') {
       if (source === 'status') {
         backendActiveAgentId = agentId || null;
       } else if (backendActiveAgentId && backendActiveAgentId !== agentId) {
         return;
       }
       
-      if (activeAgentId === agentId) {
+      const resolvedId = agentId || backendActiveAgentId || lastAgentFocusId;
+      if (activeAgentId === resolvedId && contextText === '') {
         return;
       }
       
-      activeAgentId = agentId || null;
-      updateAgentFocus(activeAgentId);
+      activeAgentId = resolvedId || null;
+      if (resolvedId) {
+        lastAgentFocusId = resolvedId;
+        if (agentFocusHideTimer) {
+          clearTimeout(agentFocusHideTimer);
+          agentFocusHideTimer = null;
+        }
+        updateAgentFocus(resolvedId, contextText);
+      } else if (!agentFocusHideTimer) {
+        agentFocusHideTimer = setTimeout(() => {
+          lastAgentFocusId = null;
+          updateAgentFocus(null);
+          agentFocusHideTimer = null;
+        }, AGENT_FOCUS_HOLD_MS);
+      }
       renderTimeline();
       if (timelineModal && timelineModal.classList.contains('visible')) {
         renderTimelineModal();
@@ -1933,7 +1983,8 @@
       // Update active agent for timeline indicator (fallback if backend hasn't updated yet)
       const activeAgent = detectActiveAgent(logs);
       if (!backendActiveAgentId) {
-        setActiveAgent(activeAgent || null, 'logs');
+        const contextLine = newLogLines[newLogLines.length - 1] || '';
+        setActiveAgent(activeAgent || null, 'logs', contextLine);
       }
       
       // Show discussion phase if detected
@@ -2064,8 +2115,7 @@
         applyAgentStatuses(backendAgentStatusMap);
       }
       
-      setActiveAgent(status.active_agent || null, 'status');
-      updateAgentFocus(status.active_agent || activeAgentId, status.progress || '');
+      setActiveAgent(status.active_agent || null, 'status', status.progress || '');
     }
 
     async function loadRecentJobs() {
