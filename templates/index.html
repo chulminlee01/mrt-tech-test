@@ -820,6 +820,63 @@
     .logs-container.visible {
       display: block;
     }
+
+    .timeline-section {
+      margin-top: 1.5rem;
+      background: var(--card-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    .timeline-title {
+      font-weight: 600;
+      color: var(--text-color);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .timeline-entry {
+      display: flex;
+      gap: 0.75rem;
+      background: var(--slate-100);
+      border-radius: 10px;
+      padding: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .timeline-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    .timeline-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .timeline-role {
+      font-weight: 600;
+      color: var(--text-color);
+      margin-bottom: 0.25rem;
+    }
+
+    .timeline-message {
+      color: var(--gray-color);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
     
     .logs-container::-webkit-scrollbar {
       width: 8px;
@@ -1127,6 +1184,19 @@
           <div class="logs-empty" id="logsEmpty">Waiting for agents to start...</div>
         </div>
       </div>
+
+      <div class="timeline-section">
+        <div class="timeline-title">🕒 Crew Discussion Timeline</div>
+        <div class="timeline-list" id="timelineList">
+          <div class="timeline-entry">
+            <div class="timeline-icon">ℹ️</div>
+            <div class="timeline-body">
+              <div class="timeline-role">Waiting for updates...</div>
+              <div class="timeline-message">Timeline will appear as soon as the crew starts collaborating.</div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <div id="statusActions" style="text-align: center; display: none;">
         <a href="#" id="resultLink" class="result-link" target="_blank">
@@ -1155,6 +1225,18 @@
     let statusInterval = null;
     let logsInterval = null;
     let lastLogCount = 0;
+    let timelineEntries = [];
+    const MAX_TIMELINE_ENTRIES = 40;
+    const timelineRoles = [
+      { id: 'pm', label: 'Product Manager', icon: '👔', keywords: ['[pm]', 'product manager'] },
+      { id: 'researcher', label: 'Research Analyst', icon: '🔍', keywords: ['[research', 'research analyst'] },
+      { id: 'designer', label: 'Assignment Designer', icon: '✏️', keywords: ['[designer', 'assignment designer'] },
+      { id: 'data', label: 'Data Provider', icon: '📊', keywords: ['[data provider]', 'data provider', 'dataset'] },
+      { id: 'builder', label: 'Web Builder', icon: '🌐', keywords: ['[web builder]', 'web builder', 'portal'] },
+      { id: 'styler', label: 'Web Designer', icon: '🎨', keywords: ['[web designer]', 'styling', 'branding'] },
+      { id: 'qa', label: 'QA Reviewer', icon: '🔎', keywords: ['[qa', 'qa reviewer', 'approved'] },
+      { id: 'assignments', label: 'Assignment Generator', icon: '📝', keywords: ['generating assignments', 'assignments generated'] }
+    ];
     
     // Agent definitions (7 agents: 4 CrewAI + 3 post-processing)
     const agents = [
@@ -1402,6 +1484,8 @@
       container.innerHTML = '<div class="logs-empty" id="logsEmpty">Waiting for agents to start...</div>';
       container.classList.remove('visible');  // Start collapsed
       document.getElementById('logsToggle').classList.add('collapsed');
+      timelineEntries = [];
+      renderTimeline();
       
       // Initialize activity boxes
       initializeActivityBoxes();
@@ -1629,7 +1713,8 @@
 
         if (result.success && result.logs && result.logs.length > 0) {
           if (result.count > lastLogCount) {
-            displayLogs(result.logs);
+            const previousCount = lastLogCount;
+            displayLogs(result.logs, previousCount);
             lastLogCount = result.count;
           }
         }
@@ -1638,7 +1723,7 @@
       }
     }
 
-    function displayLogs(logs) {
+    function displayLogs(logs, previousCount = 0) {
       const container = document.getElementById('logsContainer');
       const emptyMsg = document.getElementById('logsEmpty');
       
@@ -1647,12 +1732,13 @@
       }
 
       // Clear container if starting fresh
-      if (lastLogCount === 0) {
+      if (previousCount === 0) {
         container.innerHTML = '';
       }
 
       // Add new log lines
-      logs.slice(lastLogCount).forEach(log => {
+      const newLogLines = logs.slice(previousCount);
+      newLogLines.forEach(log => {
         const logLine = document.createElement('div');
         logLine.className = 'log-line';
         
@@ -1677,6 +1763,7 @@
 
       // Auto-scroll to bottom
       container.scrollTop = container.scrollHeight;
+      updateTimelineEntries(newLogLines);
       
       // Parse and display agent activity in boxes
       const conversations = parseAgentConversations(logs);
@@ -1766,15 +1853,8 @@
         subtitle.textContent = 'Your tech test is ready';
         message.textContent = status.progress || 'Successfully generated all assets including research, assignments, datasets, starter code, and portal.';
         progressBar.style.width = '100%';
-        
-        // Only show button if portal is ready (after Phase 2 approval)
-        if (status.portal_ready) {
-          actions.style.display = 'block';
-          subtitle.textContent = '🎉 Portal approved and ready for candidates!';
-        } else {
-          actions.style.display = 'none';
-          subtitle.textContent = 'Processing final steps...';
-        }
+        subtitle.textContent = '🎉 Portal approved and ready for candidates!';
+        actions.style.display = 'block';
         
         // Mark all agents as completed
         agents.forEach(agent => {
@@ -1785,12 +1865,18 @@
           if (statusBadge) statusBadge.textContent = 'Completed ✅';
         });
         
-        if (status.index_url && status.portal_ready) {
-          resultLink.href = status.index_url;
-        } else if (status.output_dir && status.portal_ready) {
-          // Construct URL from output dir
+        let portalLink = status.index_url || '';
+        if (!portalLink && status.output_dir) {
           const dirName = status.output_dir.split('/').pop();
-          resultLink.href = `/output/${dirName}/index.html`;
+          if (dirName) {
+            portalLink = `/output/${dirName}/index.html`;
+          }
+        }
+        if (portalLink) {
+          resultLink.href = portalLink;
+          resultLink.textContent = '📄 Open Generated Tech Test';
+        } else {
+          actions.style.display = 'none';
         }
       } else if (status.status === 'failed') {
         icon.className = 'status-icon status-icon--failed';
@@ -1834,6 +1920,73 @@
       const btn = document.getElementById('generateBtn');
       btn.disabled = false;
       btn.classList.remove('btn--loading');
+    }
+
+    function updateTimelineEntries(newLogs) {
+      if (!newLogs || newLogs.length === 0) return;
+      newLogs.forEach(log => {
+        const entry = buildTimelineEntry(log);
+        if (entry) {
+          timelineEntries.push(entry);
+        }
+      });
+      if (timelineEntries.length > MAX_TIMELINE_ENTRIES) {
+        timelineEntries = timelineEntries.slice(-MAX_TIMELINE_ENTRIES);
+      }
+      renderTimeline();
+    }
+
+    function buildTimelineEntry(log) {
+      if (!log) return null;
+      const normalized = log.toLowerCase();
+      if (normalized.includes('[api]') || normalized.includes('status check')) {
+        return null;
+      }
+      const roleMatch = timelineRoles.find(role =>
+        role.keywords.some(keyword => normalized.includes(keyword))
+      );
+      if (!roleMatch) return null;
+      const message = formatTimelineMessage(log);
+      if (!message) return null;
+      return {
+        icon: roleMatch.icon,
+        role: roleMatch.label,
+        message
+      };
+    }
+
+    function formatTimelineMessage(text) {
+      if (!text) return '';
+      let cleaned = text.replace(/^([^\[]*\[[^\]]+\]\s*)/, '').trim();
+      cleaned = cleaned.replace(/^([^\p{L}\p{N}]+)?/u, '').trim();
+      return cleaned;
+    }
+
+    function renderTimeline() {
+      const list = document.getElementById('timelineList');
+      if (!list) return;
+      if (timelineEntries.length === 0) {
+        list.innerHTML = `
+          <div class="timeline-entry">
+            <div class="timeline-icon">ℹ️</div>
+            <div class="timeline-body">
+              <div class="timeline-role">Waiting for updates...</div>
+              <div class="timeline-message">Timeline will appear as soon as the crew starts collaborating.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      list.innerHTML = timelineEntries.map(entry => `
+        <div class="timeline-entry">
+          <div class="timeline-icon">${entry.icon}</div>
+          <div class="timeline-body">
+            <div class="timeline-role">${entry.role}</div>
+            <div class="timeline-message">${entry.message}</div>
+          </div>
+        </div>
+      `).join('');
+      list.scrollTop = list.scrollHeight;
     }
 
     // Load recent jobs on page load
