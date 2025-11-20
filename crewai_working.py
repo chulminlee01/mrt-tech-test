@@ -332,7 +332,6 @@ def _run_simple_pipeline(
     
     llm = create_nvidia_llm_direct(temperature=0.4)
     
-    _log("👔 [PM] Kicking off project and delegating research.")
     kickoff = (
         f"Team, we're preparing a tech assignment for {job_level} {job_role}. "
         "Researcher, summarize current best practices so we can align."

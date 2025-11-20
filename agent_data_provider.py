@@ -9,6 +9,33 @@ import pandas as pd
 from dotenv import load_dotenv
 from faker import Faker
 
+FAKER_LOCALE_MAP = {
+    "english": "en_US",
+    "en-us": "en_US",
+    "en": "en_US",
+    "korean": "ko_KR",
+    "ko": "ko_KR",
+    "한국어": "ko_KR",
+    "japanese": "ja_JP",
+    "ja": "ja_JP",
+    "日本語": "ja_JP",
+    "chinese": "zh_CN",
+    "zh": "zh_CN",
+    "中文": "zh_CN",
+}
+
+
+def _resolve_faker_locale(language: Optional[str]) -> str:
+    if not language:
+        return "en_US"
+    normalized = language.strip().lower()
+    if normalized in FAKER_LOCALE_MAP:
+        return FAKER_LOCALE_MAP[normalized]
+    for key, locale in FAKER_LOCALE_MAP.items():
+        if key in normalized:
+            return locale
+    return "en_US"
+
 
 def _ensure_assignments(path: Path) -> dict:
     if not path.exists():
@@ -103,7 +130,10 @@ def run_data_provider(
     output_directory.mkdir(parents=True, exist_ok=True)
 
     random.seed(42)
-    fake = Faker(language)
+    faker_locale = _resolve_faker_locale(language)
+    if faker_locale != language:
+        print(f"--- Using Faker locale '{faker_locale}' for language hint '{language}' ---")
+    fake = Faker(faker_locale)
     fake.seed_instance(42)
 
     generated_paths: List[Path] = []
