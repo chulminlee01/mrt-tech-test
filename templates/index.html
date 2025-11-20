@@ -2040,6 +2040,7 @@
           discussionContent.textContent = status.progress || 'Agents are collaborating and reviewing outputs...';
         }
       } else if (status.status === 'completed') {
+        activeAgentId = null;
         icon.className = 'status-icon status-icon--completed';
         icon.textContent = '✅';
         title.textContent = 'Generation Complete!';
@@ -2081,6 +2082,7 @@
           discussionContent.textContent = 'Discussion closed. All findings and deliverables are finalized.';
         }
       } else if (status.status === 'failed') {
+        activeAgentId = null;
         icon.className = 'status-icon status-icon--failed';
         icon.textContent = '❌';
         title.textContent = 'Generation Failed';
@@ -2135,6 +2137,11 @@
       btn.classList.remove('btn--loading');
     }
 
+    function normalizeMessage(msg) {
+      if (!msg) return '';
+      return msg.trim().replace(/\\s+/g, ' ').replace(/[\\p{Punct}]/gu, '').toLowerCase();
+    }
+
     function updateTimelineEntries(newLogs) {
       if (!newLogs || newLogs.length === 0) return;
       newLogs.forEach(log => {
@@ -2145,7 +2152,17 @@
           lastEntry &&
           lastEntry.roleId === entry.roleId &&
           lastEntry.type === entry.type &&
-          lastEntry.message === entry.message
+          normalizeMessage(lastEntry.message) === normalizeMessage(entry.message)
+        ) {
+          return;
+        }
+        // Also check previous one to avoid rapid duplicates
+        const prevEntry = timelineEntries[timelineEntries.length - 2];
+        if (
+          prevEntry &&
+          prevEntry.roleId === entry.roleId &&
+          prevEntry.type === prevEntry.type &&
+          normalizeMessage(prevEntry.message) === normalizeMessage(entry.message)
         ) {
           return;
         }

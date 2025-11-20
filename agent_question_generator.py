@@ -40,12 +40,30 @@ def _ensure_report_exists(path: Path) -> str:
 
 
 def _extract_json_payload(raw: str) -> str:
-    if not raw:
-        return raw
+    import re
+    import json
+    # Remove think blocks first
+    raw = re.sub(r'&lt;think&gt;[\s\S]*?&lt;/think&gt;|\\&lt;think&gt;[\s\S]*?\\&lt;/think&gt;|&lt;think&gt;[\s\S]*?&lt;/think&gt;', '', raw, flags=re.IGNORECASE | re.DOTALL)
+    raw = re.sub(r'<think>[\s\S]*?</think>', '', raw, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Extract json code blocks, prefer last one
+    blocks = re.findall(r"```\s*(?:json)?\s*([\s\S]+?)\s*```", raw, flags=re.IGNORECASE)
+    candidates = [block.strip() for block in blocks] if blocks else []
+    candidates.append(raw.strip())
+    
+    for candidate in candidates:
+        # Extract outermost JSON if possible
+        match = re.search(r'\{[\s\S]*\}', candidate)
+        if match:
+            candidate = match.group(0)
+        try:
+            json.loads(candidate)
+            return candidate
+        except json.JSONDecodeError:
+            continue
+    
+    # Fallback
     stripped = raw.strip()
-    if stripped.startswith('```'):
-        stripped = re.sub(r'^```(?:json)?', '', stripped, flags=re.IGNORECASE).strip()
-        stripped = re.sub(r'```$', '', stripped).strip()
     match = re.search(r'\{[\s\S]*\}', stripped)
     if match:
         return match.group(0).strip()
