@@ -19,61 +19,64 @@ class LLMClientError(Exception):
 
 def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     """
-    Create primary LLM client for deterministic pipelines.
-    
-    If DEFAULT_MODEL points to an OpenRouter model (e.g., x-ai/grok-4.1-fast),
-    connect to OpenRouter directly. Otherwise fall back to NVIDIA-hosted models.
+    Create primary LLM client with automatic fallback between custom and stable NVIDIA models.
     """
-    default_model = os.getenv("DEFAULT_MODEL", "x-ai/grok-4.1-fast").strip()
+    default_model = os.getenv("DEFAULT_MODEL", "").strip()
+    fallback_chain = [
+        m.strip()
+        for m in [
+            default_model,
+            os.getenv("NVIDIA_FALLBACK_MODEL", "qwen/qwen3-next-80b-a3b-instruct"),
+            "meta/llama-3.1-8b-instruct",
+        ]
+        if m
+    ]
     
-    if default_model.startswith("x-ai/"):
-        router_key = os.getenv("OPENROUTER_API_KEY")
-        if not router_key:
-            raise LLMClientError("OPENROUTER_API_KEY not found for OpenRouter default model")
-        base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-        print("🚀 Creating OpenRouter LLM")
-        print(f"   Model: {default_model}")
-        print(f"   Base URL: {base_url}")
-        llm = ChatOpenAI(
-            model=default_model,
-            temperature=temperature,
-            base_url=base_url,
-            api_key=router_key,
-            default_headers=_get_openrouter_headers(),
-            request_timeout=120,
-            max_retries=3,
-        )
-        print("   ✅ OpenRouter LLM ready")
-        return llm
-    
+    openrouter_key = os.getenv("OPENROUTER_API_KEY")
     nvidia_key = os.getenv("NVIDIA_API_KEY")
-    if not nvidia_key:
-        raise LLMClientError("NVIDIA_API_KEY not found")
+    nvidia_base = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    openrouter_base = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     
-    nvidia_base = "https://integrate.api.nvidia.com/v1"
+    last_error: Optional[Exception] = None
+    for idx, model_name in enumerate(fallback_chain, start=1):
+        try:
+            if model_name.startswith("x-ai/"):
+                if not openrouter_key:
+                    raise LLMClientError("OPENROUTER_API_KEY not found for OpenRouter model fallback")
+                print(f"🚀 Creating OpenRouter LLM (attempt {idx})")
+                print(f"   Model: {model_name}")
+                llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    base_url=openrouter_base,
+                    api_key=openrouter_key,
+                    default_headers=_get_openrouter_headers(),
+                    request_timeout=120,
+                    max_retries=3,
+                )
+            else:
+                if not nvidia_key:
+                    raise LLMClientError("NVIDIA_API_KEY not found")
+                os.environ["OPENAI_API_KEY"] = nvidia_key
+                os.environ["OPENAI_API_BASE"] = nvidia_base
+                print(f"🚀 Creating NVIDIA LLM (attempt {idx})")
+                print(f"   Model: {model_name}")
+                llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    base_url=nvidia_base,
+                    api_key=nvidia_key,
+                    request_timeout=120,
+                    max_retries=3,
+                )
+            print("   ✅ LLM ready")
+            return llm
+        except Exception as err:
+            last_error = err
+            print(f"   ⚠️  LLM creation failed for {model_name}: {err}")
+            continue
     
-    # Set environment for OpenAI client library
-    os.environ["OPENAI_API_KEY"] = nvidia_key
-    os.environ["OPENAI_API_BASE"] = nvidia_base
-    
-    nvidia_model = default_model or "qwen/qwen3-next-80b-a3b-instruct"
-    
-    print(f"🚀 Creating NVIDIA LLM")
-    print(f"   Model: {nvidia_model}")
-    print(f"   Base URL: {nvidia_base}")
-    print(f"   For: Hierarchical CrewAI")
-    
-    llm = ChatOpenAI(
-        model=nvidia_model,
-        temperature=temperature,
-        base_url=nvidia_base,
-        api_key=nvidia_key,
-        request_timeout=120,
-        max_retries=3
-    )
-    
-    print(f"   ✅ NVIDIA LLM ready")
-    return llm
+    raise LLMClientError(f"Unable to provision LLM client. Last error: {last_error}")
 
 
 def _get_nvidia_headers() -> Dict[str, str]:
