@@ -166,6 +166,110 @@ def _default_intro(language: str = "Korean") -> Dict[str, Any]:
         "assignment_choice": "준비된 과제 중 수행 가능한 항목을 자유롭게 선택하여 제출하셔도 됩니다.",
     }
 
+
+def _ui_strings(language: str) -> Dict[str, str]:
+    key = (language or "korean").strip().lower()
+    if key in {"english", "en", "en-us", "en-gb"}:
+        return {
+            "lang_attr": "en",
+            "nav_intro": "Intro",
+            "nav_assignments": "Assignments",
+            "apply_label": "Apply",
+            "hero_button_apply": "Apply Now",
+            "hero_button_site": "Company Website",
+            "header_logo_label": "Go to Myrealtrip homepage",
+            "assignments_heading": "Assignments",
+            "assignments_subheading": "Review the assignments and download the datasets/starter code to get started.",
+            "apply_section_title": "How to Apply",
+            "apply_section_body": "Pick the assignment that best showcases your abilities, then submit your solution with your approach, testing strategy, and AI tool usage notes.",
+            "apply_section_cta": "Submit Application",
+            "mission_heading": "✔️ Assignment Overview",
+            "requirements_heading": "⚙️ Technical Requirements",
+            "deliverables_heading": "📦 Deliverables",
+            "datasets_heading": "📂 Datasets",
+            "starter_heading": "🧰 Starter Code",
+            "questions_heading": "💬 Deep-Dive Questions",
+            "starter_missing": "No starter code is provided.",
+            "starter_default_desc": "Includes a ready-to-use scaffold to accelerate core implementation.",
+            "assignments_empty": "No assignments available.",
+            "default_assignment_title": "Assignment {index}",
+        }
+    if key in {"japanese", "ja", "ja-jp", "日本語", "japanese (日本語)"}:
+        return {
+            "lang_attr": "ja",
+            "nav_intro": "イントロ",
+            "nav_assignments": "課題",
+            "apply_label": "応募する",
+            "hero_button_apply": "応募する",
+            "hero_button_site": "企業サイト",
+            "header_logo_label": "Myrealtrip ホームへ移動",
+            "assignments_heading": "課題一覧",
+            "assignments_subheading": "実務型課題を確認し、データセットとスターターコードをダウンロードして着手してください。",
+            "apply_section_title": "応募案内",
+            "apply_section_body": "最も自信のある課題を選び、成果物・実装戦略・テスト方法・AIツール活用内容をまとめて提出してください。",
+            "apply_section_cta": "応募する",
+            "mission_heading": "✔️ 課題概要",
+            "requirements_heading": "⚙️ 技術要件",
+            "deliverables_heading": "📦 提出物",
+            "datasets_heading": "📂 データセット",
+            "starter_heading": "🧰 スターターコード",
+            "questions_heading": "💬 ディスカッション質問",
+            "starter_missing": "提供されているスターターコードはありません。",
+            "starter_default_desc": "主要ロジック実装のための基本構造を含みます。",
+            "assignments_empty": "登録されている課題がありません。",
+            "default_assignment_title": "課題 {index}",
+        }
+    if key in {"chinese", "zh", "zh-cn", "中文", "chinese (中文)"}:
+        return {
+            "lang_attr": "zh-Hans",
+            "nav_intro": "介绍",
+            "nav_assignments": "作业",
+            "apply_label": "立即申请",
+            "hero_button_apply": "立即申请",
+            "hero_button_site": "公司官网",
+            "header_logo_label": "前往 Myrealtrip 官网",
+            "assignments_heading": "作业列表",
+            "assignments_subheading": "查看实战型作业，并下载数据集与起始代码开始实施。",
+            "apply_section_title": "申请指南",
+            "apply_section_body": "请选择最能展现你能力的作业，提交成果、实现策略、测试计划以及 AI 工具使用说明。",
+            "apply_section_cta": "提交申请",
+            "mission_heading": "✔️ 作业说明",
+            "requirements_heading": "⚙️ 技术要求",
+            "deliverables_heading": "📦 提交物",
+            "datasets_heading": "📂 数据集",
+            "starter_heading": "🧰 起始代码",
+            "questions_heading": "💬 深度讨论问题",
+            "starter_missing": "暂无提供起始代码。",
+            "starter_default_desc": "包含可直接使用的脚手架，帮助快速实现核心逻辑。",
+            "assignments_empty": "尚无可用作业。",
+            "default_assignment_title": "作业 {index}",
+        }
+    # Korean default
+    return {
+        "lang_attr": "ko",
+        "nav_intro": "Intro",
+        "nav_assignments": "Assignments",
+        "apply_label": "지원하기",
+        "hero_button_apply": "지원하기",
+        "hero_button_site": "회사 홈페이지",
+        "header_logo_label": "Myrealtrip 홈으로 이동",
+        "assignments_heading": "Assignments",
+        "assignments_subheading": "실무형 과제를 확인하고 데이터/스타터 코드를 내려받아 시작해 보세요.",
+        "apply_section_title": "지원 안내",
+        "apply_section_body": "가장 자신 있는 과제를 선택하여 결과물, 구현 전략, 테스트 및 AI 도구 활용 내역을 정리해 제출해 주세요.",
+        "apply_section_cta": "지원하기",
+        "mission_heading": "✔️ 과제 설명",
+        "requirements_heading": "⚙️ 기술 요구사항",
+        "deliverables_heading": "📦 제출물",
+        "datasets_heading": "📂 데이터셋",
+        "starter_heading": "🧰 스타터 코드",
+        "questions_heading": "💬 심층 토론 질문",
+        "starter_missing": "제공된 스타터 코드가 없습니다.",
+        "starter_default_desc": "핵심 로직 구현을 위한 기본 구조를 제공합니다.",
+        "assignments_empty": "등록된 과제가 없습니다.",
+        "default_assignment_title": "과제 {index}",
+    }
+
 def _list_items(items: Optional[List[str]]) -> str:
     if not items:
         return "<li>정보 없음</li>"
@@ -204,21 +308,21 @@ def _render_datasets(datasets: List[Dict[str, Any]], html_dir: Path) -> str:
         rows.append(f"<li>{link} {info} {desc_html}</li>")
     return "\n".join(rows)
 
-def _render_starter(starter: Dict[str, Any], html_dir: Path) -> str:
+def _render_starter(starter: Dict[str, Any], html_dir: Path, ui: Dict[str, str]) -> str:
     if not starter:
-        return "<p class='dim'>제공된 스타터 코드가 없습니다.</p>"
+        return f"<p class='dim'>{ui['starter_missing']}</p>"
     href = _resolve_href(starter.get("download_href") or starter.get("path"), html_dir)
     filename = escape(starter.get("filename") or "starter_code")
-    description = escape(starter.get("description") or "핵심 로직 구현을 위한 기본 구조를 제공합니다.")
+    description = escape(starter.get("description") or ui["starter_default_desc"])
     language = starter.get("language")
     badge = f"<span class='resource-meta'>{escape(str(language).upper())}</span>" if language else ""
     link = f"<a class='resource-link' href='{href}' download>{filename}</a>" if href else f"<span class='resource-link is-disabled'>{filename}</span>"
     return f"<div class='starter-resource'>{link}{badge}<p class='resource-desc'>{description}</p></div>"
 
 # -- Assignments rendering (card style) ----------------------------------------
-def _render_assignments(assignments: List[Dict[str, Any]], html_dir: Path) -> str:
+def _render_assignments(assignments: List[Dict[str, Any]], html_dir: Path, ui: Dict[str, str]) -> str:
     if not assignments:
-        return "<div class='assignments-empty'>등록된 과제가 없습니다.</div>"
+        return f"<div class='assignments-empty'>{ui['assignments_empty']}</div>"
 
     tab_buttons: List[str] = []
     panels: List[str] = []
@@ -228,12 +332,12 @@ def _render_assignments(assignments: List[Dict[str, Any]], html_dir: Path) -> st
         button_id = f"{tab_id}-button"
         is_active = idx == 1
 
-        title = escape(assignment.get("title") or f"과제 {idx}")
+        title = escape(assignment.get("title") or ui["default_assignment_title"].format(index=idx))
         summary = escape(assignment.get("summary") or "")
         mission = escape(assignment.get("mission") or "")
 
         datasets_html = _render_datasets(assignment.get("datasets_resolved", []), html_dir)
-        starter_html = _render_starter(assignment.get("starter_resolved", {}), html_dir)
+        starter_html = _render_starter(assignment.get("starter_resolved", {}), html_dir, ui)
 
         active_attr = ' data-active="true"' if is_active else ''
         tab_buttons.append(
@@ -250,31 +354,31 @@ def _render_assignments(assignments: List[Dict[str, Any]], html_dir: Path) -> st
     <p class="assignment-summary">{summary}</p>
 
     <div class="assignment-section">
-      <h4>✔️ 과제 설명</h4>
+      <h4>{ui["mission_heading"]}</h4>
       <p>{mission}</p>
     </div>
 
     <div class="assignment-section">
-      <h4>⚙️ 기술 요구사항</h4>
+      <h4>{ui["requirements_heading"]}</h4>
       <ul class="assignment-list">{_list_items(assignment.get("requirements"))}</ul>
     </div>
 
     <div class="assignment-section">
-      <h4>📦 제출물</h4>
+      <h4>{ui["deliverables_heading"]}</h4>
       <ul class="assignment-list">{_list_items(assignment.get("deliverables"))}</ul>
     </div>
 
     <div class="assignment-section">
-      <h4>📂 데이터셋</h4>
+      <h4>{ui["datasets_heading"]}</h4>
       <ul class="resource-list">{datasets_html}</ul>
     </div>
 
     <div class="assignment-section">
-      <h4>🧰 스타터 코드</h4>
+      <h4>{ui["starter_heading"]}</h4>
       {starter_html}
     </div>
 
-    {'<div class="assignment-section"><h4>💬 심층 토론 질문</h4><ol class="assignment-list">' + _ordered_items(assignment.get("discussion_questions")) + '</ol></div>' if assignment.get("discussion_questions") else ""}
+    {('<div class="assignment-section"><h4>' + ui["questions_heading"] + '</h4><ol class="assignment-list">' + _ordered_items(assignment.get("discussion_questions")) + '</ol></div>') if assignment.get("discussion_questions") else ""}
   </div>
 </article>
 """)
@@ -303,7 +407,8 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
             "starter_resolved": assignment.get("starter_code", {}),
         })
 
-    assignments_html = _render_assignments(assignments_prepared, html_dir)
+    ui = _ui_strings(language)
+    assignments_html = _render_assignments(assignments_prepared, html_dir, ui)
 
     # intro data
     language = context.get("language", "Korean")
@@ -409,7 +514,7 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
 
     # Build HTML
     return f"""<!DOCTYPE html>
-<html lang='ko'>
+<html lang='{ui["lang_attr"]}'>
 <head>
   <meta charset='UTF-8' />
   <meta name='viewport' content='width=device-width, initial-scale=1' />
@@ -419,15 +524,15 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
 <body>
   <header class='page-header'>
     <div class='page-header__container'>
-      <a href='{SITE_URL}' target='_blank' rel='noopener' class='page-header__logo' aria-label='Myrealtrip 홈으로 이동'>
+      <a href='{SITE_URL}' target='_blank' rel='noopener' class='page-header__logo' aria-label='{ui["header_logo_label"]}'>
         <img src='{LOGO_URL}' alt='Myrealtrip 로고'>
       </a>
       <div class='page-header__right'>
         <nav class='page-header__nav'>
-          <a class='page-header__nav-link' href='#intro'>Intro</a>
-          <a class='page-header__nav-link' href='#assignments'>Assignments</a>
+          <a class='page-header__nav-link' href='#intro'>{ui["nav_intro"]}</a>
+          <a class='page-header__nav-link' href='#assignments'>{ui["nav_assignments"]}</a>
         </nav>
-        <a class='page-header__apply-btn' href='{CAREER_URL}' target='_blank' rel='noopener'>지원하기</a>
+        <a class='page-header__apply-btn' href='{CAREER_URL}' target='_blank' rel='noopener'>{ui["apply_label"]}</a>
       </div>
     </div>
   </header>
@@ -438,8 +543,8 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
       <h1 class='hero-section__title'>{hero_role}</h1>
       <p class='hero-section__description'>{assignment_choice}</p>
       <div class='hero-section__actions'>
-        <a class='btn btn-primary' href='{CAREER_URL}' target='_blank' rel='noopener' aria-label='지원 페이지 열기'>지원하기</a>
-        <a class='btn btn-outline' href='{SITE_URL}' target='_blank' rel='noopener' aria-label='회사 홈페이지 열기'>회사 홈페이지</a>
+        <a class='btn btn-primary' href='{CAREER_URL}' target='_blank' rel='noopener' aria-label='{ui["hero_button_apply"]}'>{ui["hero_button_apply"]}</a>
+        <a class='btn btn-outline' href='{SITE_URL}' target='_blank' rel='noopener' aria-label='{ui["hero_button_site"]}'>{ui["hero_button_site"]}</a>
       </div>
       <p class='hero-section__note'>{site_invite}</p>
     </section>
@@ -469,16 +574,16 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
     <!-- Assignments -->
     <section class='assignments-section' id='assignments'>
       <div class='section-heading'>
-        <h2>Assignments</h2>
-        <p class='dim'>실무형 과제를 확인하고 데이터/스타터 코드를 내려받아 시작해 보세요.</p>
+        <h2>{ui["assignments_heading"]}</h2>
+        <p class='dim'>{ui["assignments_subheading"]}</p>
       </div>
       {assignments_html}
     </section>
 
     <section class='apply-section'>
-      <h2>지원 안내</h2>
-      <p class='dim'>가장 자신 있는 과제를 선택하여 결과물, 구현 전략, 테스트 및 AI 도구 활용 내역을 정리해 제출해 주세요.</p>
-      <a class='apply-section__cta' href='{CAREER_URL}' target='_blank' rel='noopener'>지원하기</a>
+      <h2>{ui["apply_section_title"]}</h2>
+      <p class='dim'>{ui["apply_section_body"]}</p>
+      <a class='apply-section__cta' href='{CAREER_URL}' target='_blank' rel='noopener'>{ui["apply_section_cta"]}</a>
     </section>
   </main>
 

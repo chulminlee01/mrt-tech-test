@@ -19,12 +19,33 @@ class LLMClientError(Exception):
 
 def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     """
-    Create NVIDIA LLM with Minimax-M2 as default for hierarchical crew.
+    Create primary LLM client for deterministic pipelines.
     
-    Tries:
-    1. minimaxai/minimax-m2 (fast, good context)
-    2. qwen/qwen3-next-80b-a3b-instruct (high quality backup)
+    If DEFAULT_MODEL points to an OpenRouter model (e.g., x-ai/grok-4.1-fast),
+    connect to OpenRouter directly. Otherwise fall back to NVIDIA-hosted models.
     """
+    default_model = os.getenv("DEFAULT_MODEL", "x-ai/grok-4.1-fast").strip()
+    
+    if default_model.startswith("x-ai/"):
+        router_key = os.getenv("OPENROUTER_API_KEY")
+        if not router_key:
+            raise LLMClientError("OPENROUTER_API_KEY not found for OpenRouter default model")
+        base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        print("🚀 Creating OpenRouter LLM")
+        print(f"   Model: {default_model}")
+        print(f"   Base URL: {base_url}")
+        llm = ChatOpenAI(
+            model=default_model,
+            temperature=temperature,
+            base_url=base_url,
+            api_key=router_key,
+            default_headers=_get_openrouter_headers(),
+            request_timeout=120,
+            max_retries=3,
+        )
+        print("   ✅ OpenRouter LLM ready")
+        return llm
+    
     nvidia_key = os.getenv("NVIDIA_API_KEY")
     if not nvidia_key:
         raise LLMClientError("NVIDIA_API_KEY not found")
@@ -35,15 +56,13 @@ def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
     os.environ["OPENAI_API_KEY"] = nvidia_key
     os.environ["OPENAI_API_BASE"] = nvidia_base
     
-    # Get desired model (Minimax as requested default)
-    nvidia_model = os.getenv("DEFAULT_MODEL", "minimaxai/minimax-m2")
+    nvidia_model = default_model or "qwen/qwen3-next-80b-a3b-instruct"
     
     print(f"🚀 Creating NVIDIA LLM")
     print(f"   Model: {nvidia_model}")
     print(f"   Base URL: {nvidia_base}")
     print(f"   For: Hierarchical CrewAI")
     
-    # Simple approach: Direct model name without any prefix
     llm = ChatOpenAI(
         model=nvidia_model,
         temperature=temperature,
@@ -103,6 +122,17 @@ def create_llm_client(
     # If user explicitly provides a model, use it with best-guess provider
     if model:
         return _create_with_explicit_model(model, temp_val, **kwargs)
+    
+    default_model = os.getenv("DEFAULT_MODEL", "").strip()
+    if default_model.startswith("x-ai/"):
+        router_key = os.getenv("OPENROUTER_API_KEY")
+        if router_key:
+            try:
+                return _create_with_explicit_model(default_model, temp_val, **kwargs)
+            except Exception as e:
+                print(f"⚠️  Preferred OpenRouter model failed: {e}")
+        else:
+            print("⚠️  DEFAULT_MODEL requests OpenRouter but OPENROUTER_API_KEY not set. Falling back to NVIDIA/OpenAI.")
     
     # Try NVIDIA first (primary)
     nvidia_key = os.getenv("NVIDIA_API_KEY")
@@ -168,7 +198,9 @@ def create_llm_client(
 def _create_nvidia_client(temperature: float, **kwargs: Any) -> ChatOpenAI:
     """Create NVIDIA client with Qwen (primary) or DeepSeek."""
     # NVIDIA uses OpenAI-compatible API
-    nvidia_model = os.getenv("DEFAULT_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
+    nvidia_model = os.getenv("DEFAULT_MODEL", "").strip()
+    if not nvidia_model or nvidia_model.startswith("x-ai/"):
+        nvidia_model = os.getenv("NVIDIA_FALLBACK_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
     base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     api_key = os.getenv("NVIDIA_API_KEY")
     

@@ -13,6 +13,36 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from llm_client import create_llm_client, create_nvidia_llm_direct
 
+UNICODE_QUOTE_MAP = {
+    "“": '"',
+    "”": '"',
+    "„": '"',
+    "‟": '"',
+    "«": '"',
+    "»": '"',
+    "「": '"',
+    "」": '"',
+    "『": '"',
+    "』": '"',
+    "‚": "'",
+    "‘": "'",
+    "’": "'",
+    "‛": "'",
+    "´": "'",
+    "ˮ": '"',
+}
+
+
+def _normalize_jsonish(text: str) -> str:
+    """Normalize typographic punctuation that breaks JSON parsing."""
+    if not text:
+        return text
+    for bad, good in UNICODE_QUOTE_MAP.items():
+        text = text.replace(bad, good)
+    # Replace full-width punctuation commonly emitted in non-English output
+    text = text.replace("：", ":").replace("，", ",")
+    return text
+
 
 def _normalize_model_id(name: str) -> str:
     if not name:
@@ -359,6 +389,7 @@ JSON Schema:
             "schema_description": schema_description,
         }
     )
+    raw_json = _normalize_jsonish(raw_json)
 
     cleaned_json = _extract_json_payload(raw_json)
 
