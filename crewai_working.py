@@ -573,9 +573,9 @@ def generate_with_crewai(
         output_dir.mkdir(parents=True, exist_ok=True)
     else:
         # Generic output root, create new timestamped directory
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_role = job_role.lower().replace(" ", "_")
-    safe_level = job_level.lower().replace(" ", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_role = job_role.lower().replace(" ", "_")
+        safe_level = job_level.lower().replace(" ", "_")
         output_dir = output_root_path / f"{safe_role}_{safe_level}_{timestamp}"
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"📁 Output: {output_dir}")
