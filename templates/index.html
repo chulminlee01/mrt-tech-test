@@ -1000,36 +1000,132 @@
     }
 
     .long-task-banner {
-      margin: 1rem 0 1.5rem;
-      padding: 1rem 1.25rem;
-      border-radius: 14px;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      background: rgba(5, 46, 22, 0.75);
+      margin: 1.25rem 0 1.75rem;
+      padding: 1.25rem 1.5rem 1.5rem;
+      border-radius: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: rgba(4, 47, 46, 0.85);
       color: #bbf7d0;
-      font-size: 0.9rem;
-      box-shadow: 0 15px 38px rgba(6, 78, 59, 0.45);
+      box-shadow: 0 18px 40px rgba(6, 78, 59, 0.45);
       display: none;
-      align-items: center;
-      gap: 0.75rem;
+      flex-direction: column;
+      gap: 1rem;
     }
-
+    
     .long-task-banner.visible {
       display: flex;
     }
-
+    
+    .long-task-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .long-task-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ecfdf5;
+      margin-bottom: 0.15rem;
+    }
+    
+    .long-task-subtitle {
+      font-size: 0.9rem;
+      color: #a7f3d0;
+    }
+    
     .long-task-spinner {
-      width: 1.25rem;
-      height: 1.25rem;
+      width: 1.5rem;
+      height: 1.5rem;
       border-radius: 9999px;
-      border: 2px solid rgba(134, 239, 172, 0.4);
+      border: 2px solid rgba(134, 239, 172, 0.25);
       border-top-color: #34d399;
       animation: spin 1s linear infinite;
     }
-
+    
+    .long-task-spinner.paused {
+      opacity: 0.35;
+      animation-play-state: paused;
+    }
+    
     @keyframes spin {
       to {
         transform: rotate(360deg);
       }
+    }
+    
+    .long-task-steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    
+    .long-task-step {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.65rem 0.5rem;
+      border-radius: 12px;
+      background: rgba(15, 118, 110, 0.25);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+    
+    .long-task-step.waiting {
+      opacity: 0.65;
+    }
+    
+    .long-task-step.active {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+    
+    .long-task-step.done {
+      background: rgba(6, 95, 70, 0.5);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    
+    .long-task-step-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 9999px;
+      background: rgba(110, 231, 183, 0.7);
+      margin-top: 0.4rem;
+      position: relative;
+    }
+    
+    .long-task-step.active .long-task-step-dot::after {
+      content: "";
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      width: 24px;
+      height: 24px;
+      border-radius: 9999px;
+      border: 1px solid rgba(110, 231, 183, 0.6);
+      animation: stepPulse 1.8s ease-in-out infinite;
+    }
+    
+    .long-task-step.done .long-task-step-dot {
+      background: #34d399;
+    }
+    
+    @keyframes stepPulse {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    
+    .long-task-step-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #ecfdf5;
+      margin-bottom: 0.1rem;
+    }
+    
+    .long-task-step-status {
+      font-size: 0.8rem;
+      color: #a7f3d0;
     }
 
     @keyframes focusPulse {
@@ -1457,9 +1553,15 @@
       </div>
 
       <div class="long-task-banner" id="longTaskBanner">
-        <div class="long-task-spinner"></div>
-        <div id="longTaskText">Finalizing deliverables. This may take a minute…</div>
+        <div class="long-task-header">
+          <div class="long-task-spinner" id="longTaskSpinner"></div>
+          <div>
+            <div class="long-task-title" id="longTaskTitle">Finalizing deliverables</div>
+            <div class="long-task-subtitle" id="longTaskText">This may take a minute. Please keep this window open.</div>
+          </div>
         </div>
+        <ul class="long-task-steps" id="longTaskSteps"></ul>
+      </div>
       
       <div class="timeline-modal" id="timelineModal">
         <div class="timeline-modal-content">
@@ -1547,6 +1649,9 @@
     const discussionTitleText = document.getElementById('discussionTitleText');
     const longTaskBanner = document.getElementById('longTaskBanner');
     const longTaskText = document.getElementById('longTaskText');
+    const longTaskStepsContainer = document.getElementById('longTaskSteps');
+    const longTaskTitle = document.getElementById('longTaskTitle');
+    const longTaskSpinner = document.getElementById('longTaskSpinner');
     const agentFocus = document.getElementById('agentFocus');
     const agentFocusIcon = document.getElementById('agentFocusIcon');
     const agentFocusLabel = document.getElementById('agentFocusLabel');
@@ -1853,7 +1958,9 @@
       timelineEntries = [];
       renderTimeline();
       renderTimelineModal();
-      hideLongTaskBanner();
+      hideLongTaskBanner(true);
+      resetLongTaskState();
+      renderLongTaskSteps();
       resetAgentFocus();
 
       const discussionPhase = document.getElementById('discussionPhase');
@@ -2344,58 +2451,158 @@
       `;
     }
 
-    const LONG_TASK_START = [
-      'finalizing datasets',
-      'generating starter code bundle',
-      'applying custom portal styling',
-      'finalizing deliverables',
-      'assignment generator is crafting'
+    const LONG_TASK_STEPS = [
+      {
+        id: 'starter',
+        label: 'Starter Code Bundle',
+        startKeywords: [
+          'generating starter code bundle',
+          'generating starter code package',
+          'starter code bundle'
+        ],
+        endKeywords: [
+          'starter code package ready',
+          'starter code ready'
+        ],
+        message: 'Packaging starter code files for each assignment… this usually takes about a minute.'
+      },
+      {
+        id: 'styling',
+        label: 'Portal Styling & Layout',
+        startKeywords: [
+          'applying custom portal styling',
+          'applying myrealtrip branding',
+          'layout polish'
+        ],
+        endKeywords: [
+          'styling refinements applied',
+          'styling applied'
+        ],
+        message: 'Applying Myrealtrip branding, typography, and layout polish.'
+      },
+      {
+        id: 'finalize',
+        label: 'Final Asset Publishing',
+        startKeywords: [
+          'finalizing datasets',
+          'finalizing deliverables',
+          'publishing portal link'
+        ],
+        endKeywords: [
+          'final assets ready',
+          'portal ready for candidates',
+          'portal ready at'
+        ],
+        message: 'Finalizing datasets and publishing the portal link.'
+      }
     ];
-    const LONG_TASK_END = [
-      'starter code package ready',
-      'styling refinements applied',
-      'final assets ready',
-      'portal ready for candidates',
-      'assignments generated'
-    ];
+
+    let longTaskState = {};
+
+    function buildLongTaskSteps() {
+      if (!longTaskStepsContainer) return;
+      longTaskStepsContainer.innerHTML = LONG_TASK_STEPS.map(step => `
+        <li class="long-task-step waiting" data-step-id="${step.id}">
+          <div class="long-task-step-dot"></div>
+          <div>
+            <div class="long-task-step-label">${step.label}</div>
+            <div class="long-task-step-status">Waiting to start</div>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    function resetLongTaskState() {
+      longTaskState = LONG_TASK_STEPS.reduce((acc, step) => {
+        acc[step.id] = 'waiting';
+        return acc;
+      }, {});
+    }
+
+    function renderLongTaskSteps() {
+      if (!longTaskStepsContainer) return;
+      const items = longTaskStepsContainer.querySelectorAll('.long-task-step');
+      items.forEach(item => {
+        const stepId = item.getAttribute('data-step-id');
+        const status = longTaskState[stepId] || 'waiting';
+        item.classList.remove('waiting', 'active', 'done');
+        item.classList.add(status);
+        const statusEl = item.querySelector('.long-task-step-status');
+        if (statusEl) {
+          let text = 'Waiting to start';
+          if (status === 'active') text = 'In progress…';
+          if (status === 'done') text = 'Completed';
+          statusEl.textContent = text;
+        }
+      });
+
+      const activeStep = LONG_TASK_STEPS.find(step => longTaskState[step.id] === 'active');
+      if (longTaskTitle) {
+        longTaskTitle.textContent = activeStep ? `${activeStep.label} in progress` : 'Finalizing deliverables';
+      }
+      if (longTaskText) {
+        if (activeStep) {
+          longTaskText.textContent = activeStep.message;
+        } else if (longTaskActive) {
+          longTaskText.textContent = 'Wrapping up remaining assets…';
+        } else {
+          longTaskText.textContent = 'This may take a minute. Please keep this window open.';
+        }
+      }
+      if (longTaskSpinner) {
+          longTaskSpinner.classList.toggle('paused', !activeStep);
+      }
+    }
+
+    buildLongTaskSteps();
+    resetLongTaskState();
+    renderLongTaskSteps();
 
     function updateLongTaskBanner(newLogs) {
       if (!newLogs || newLogs.length === 0) return;
       const normalized = newLogs.map(line => line.toLowerCase());
+      let stateChanged = false;
 
-      if (normalized.some(line => LONG_TASK_START.some(keyword => line.includes(keyword)))) {
-        let message = 'Finalizing deliverables. This may take a minute…';
-        if (normalized.some(line => line.includes('starter code'))) {
-          message = 'Generating starter code package… this can take up to a minute.';
-        } else if (normalized.some(line => line.includes('styling'))) {
-          message = 'Applying custom portal styling… almost ready.';
-        } else if (normalized.some(line => line.includes('assignment generator is crafting'))) {
-          message = 'Assignment Generator is crafting scenario variations… thank you for waiting.';
-        } else if (normalized.some(line => line.includes('finalizing'))) {
-          message = 'Finalizing datasets and portal assets… please keep this tab open.';
+      LONG_TASK_STEPS.forEach(step => {
+        const shouldStart = normalized.some(line => step.startKeywords.some(keyword => line.includes(keyword)));
+        const shouldEnd = normalized.some(line => step.endKeywords.some(keyword => line.includes(keyword)));
+
+        if (shouldStart && longTaskState[step.id] === 'waiting') {
+          longTaskState[step.id] = 'active';
+          stateChanged = true;
+          showLongTaskBanner();
         }
-        showLongTaskBanner(message);
+        if (shouldEnd && longTaskState[step.id] !== 'done') {
+          longTaskState[step.id] = 'done';
+          stateChanged = true;
+        }
+      });
+
+      if (stateChanged) {
+        renderLongTaskSteps();
       }
 
-      if (normalized.some(line => LONG_TASK_END.some(keyword => line.includes(keyword)))) {
+      const hasStarted = Object.values(longTaskState).some(status => status !== 'waiting');
+      const hasActive = Object.values(longTaskState).some(status => status === 'active');
+      if (hasStarted && !hasActive && longTaskActive) {
         hideLongTaskBanner();
       }
     }
 
-    function showLongTaskBanner(message) {
+    function showLongTaskBanner() {
       if (!longTaskBanner) return;
       longTaskActive = true;
-      if (longTaskText) {
-        longTaskText.textContent = message || 'Finalizing deliverables. This may take a minute…';
-      }
       longTaskBanner.classList.add('visible');
+      renderLongTaskSteps();
     }
 
-    function hideLongTaskBanner() {
+    function hideLongTaskBanner(force = false) {
       if (!longTaskBanner) return;
-      if (!longTaskActive) return;
+      if (!longTaskActive && !force) return;
       longTaskActive = false;
       longTaskBanner.classList.remove('visible');
+      resetLongTaskState();
+      renderLongTaskSteps();
     }
 
     timelineModal?.addEventListener('click', (event) => {
