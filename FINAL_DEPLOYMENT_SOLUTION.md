@@ -93,7 +93,7 @@
          <div class="card">
            <div class="icon">📱</div>
            <div class="title">Senior iOS Developer</div>
-           <div class="meta">5 assignments • SwiftUI • OTA</div>
+          <div class="meta">1 assignment • SwiftUI • OTA</div>
            <a href="./ios_developer_senior_20241113_123456/">과제 보기 →</a>
          </div>
          <!-- Add more cards for each generated test -->

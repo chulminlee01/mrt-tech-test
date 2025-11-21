@@ -494,7 +494,7 @@ Step-specific model > Global --model > OPENAI_MODEL env var > default
 ┌──────────────────────────────────────────────────┐
 │ Agent 2: Question Generator                      │
 │ - Reads research_report.txt                      │
-│ - Generates 5 assignments                        │
+│ - Generates 1 assignment                         │
 │ - Defines dataset schemas & starter code specs   │
 │ - Outputs assignments.json + assignments.md      │
 └──────────┬───────────────────────────────────────┘

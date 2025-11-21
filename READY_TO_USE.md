@@ -90,7 +90,7 @@ USE_SIMPLE_PIPELINE=false
 ```
 output/[role]_[level]_[timestamp]/
 ├── research_report.txt       (team discussion)
-├── assignments.json           (5 assignments)
+├── assignments.json           (1 assignment)
 ├── assignments.md  
 ├── datasets/                  (OTA data)
 │   ├── hotels.json

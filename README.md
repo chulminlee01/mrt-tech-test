@@ -109,7 +109,7 @@ cp .env.example .env
    └─→ Team reaches consensus
 
 4. ✏️ Assignment Creation
-   └─→ Designer creates 5 assignments
+   └─→ Designer creates a single flagship assignment
    └─→ Based on team consensus
 
 5. 🔎 Quality Review
@@ -350,7 +350,7 @@ OPENROUTER_APP_NAME=MRT Tech Test Generator
 |-------|------|------|------|
 | **PM Leader** | 👔 | Coordinates team, approves delivery | OpenRouter |
 | **Research Analyst** | 🔍 | Google CSE searches (4+) | OpenRouter |
-| **Assignment Designer** | ✏️ | Creates 5 assignments | OpenRouter |
+| **Assignment Designer** | ✏️ | Creates one flagship assignment | OpenRouter |
 | **QA Reviewer** | 🔎 | Quality assurance | OpenRouter |
 | **Data Provider** | 📊 | Synthetic datasets | (No LLM) |
 | **Web Builder** | 🌐 | Candidate portal | (No LLM) |

@@ -456,7 +456,7 @@ Research:
     
     # Designer confirmation
     _log("✏️ [Designer] Acknowledging assignment creation plan.")
-    _log("I will generate 5 assignments covering these skill areas.")
+    _log("I'll craft one flagship assignment that covers these priority skills.")
     
     # Data Provider Input
     _log("📊 [Data Provider] Reviewing data requirements...")

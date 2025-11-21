@@ -186,7 +186,7 @@ cat > index.html << 'HTML'
     <!-- Add your generated tests here -->
     <div class="test-card">
       <div class="test-title">Senior iOS Developer</div>
-      <div class="test-meta">5 assignments • SwiftUI • OTA scenarios</div>
+      <div class="test-meta">1 assignment • SwiftUI • OTA scenario</div>
       <a href="./ios_developer_senior_20241113_123456/" class="test-link">과제 보기 →</a>
     </div>
     

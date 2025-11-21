@@ -91,7 +91,7 @@ http://localhost:8080
 [Yellow] ✅ Found 8 results from Google CSE
 [Purple] Final Answer: Based on research...
 
-✏️ Designer: Creating 5 assignments...
+✏️ Designer: Creating a single flagship assignment...
 ✏️ Designer: Should I include SwiftUI or UIKit?
 ✏️ Designer: (Asks Research Analyst via delegation)
 🔍 Research: SwiftUI is preferred in 2024-2025...
@@ -217,7 +217,7 @@ output/ios_developer_senior_20241113_001234/
 |------|-------|---------------|------------------|
 | 0:00 | Start | 👔 PM | PM initializes team |
 | 0:01 | Research | 🔍 Research | Google CSE searches (5-8 queries) |
-| 1:30 | Design | ✏️ Designer | Creates 5 assignments |
+| 1:30 | Design | ✏️ Designer | Creates 1 flagship assignment |
 | 2:00 | Discussion | ✏️ Designer ↔ 🔍 Research | Designer asks clarifications |
 | 2:30 | Review | 🔎 Reviewer + 📝 Writer | Quality + documentation review |
 | 3:00 | Discussion | 🔎 Reviewer ↔ ✏️ Designer | Revision requests |

@@ -198,8 +198,8 @@ def run_question_generator(
                 "job_level": {"type": "string"},
                 "assignments": {
                     "type": "array",
-                    "minItems": 5,
-                    "maxItems": 5,
+                    "minItems": 1,
+                    "maxItems": 1,
                     "items": {
                         "type": "object",
                         "required": [
@@ -303,9 +303,9 @@ def run_question_generator(
 연구 요약:
 {research_summary}
 
-위 정보를 참고하여 OTA 서비스 맥락에 맞는 테이크홈 과제 5개를 설계하세요.
-- 각 과제는 서로 다른 Myrealtrip 고객 여정 또는 OTA 기능 영역을 다루고, 중복되지 않는 문제를 제시해야 합니다.
-- 모든 assignment에는 최소 1개의 맞춤형 데이터셋(`datasets`)과 스타터 코드 메타데이터(`starter_code`)를 포함시키고, 내용이 과제 요구사항과 긴밀히 연결되도록 하세요.
+위 정보를 참고하여 OTA 서비스 맥락에 맞는 대표 테이크홈 과제 1개를 설계하세요.
+- 이 과제는 Myrealtrip 고객 여정 중 가장 중요한 문제를 해결하도록 설계하고, 실무 수준의 깊이를 담아야 합니다.
+- 과제에는 최소 1개의 맞춤형 데이터셋(`datasets`)과 스타터 코드 메타데이터(`starter_code`)를 포함시키고, 내용이 과제 요구사항과 긴밀히 연결되도록 하세요.
 - 데이터셋의 `description`과 `columns`는 과제에서 다루는 문제를 해결하는 데 필요한 정보를 전달해야 하며, `records` 값은 10~2000 범위에서 현실적인 크기를 설정하세요.
 - `starter_code`에는 후보자가 바로 활용할 수 있도록 언어(`language`), 파일명(`filename`), 제공 목적을 명확히 설명하고 과제 맥락과 연결하세요.
 - 모든 설명은 간결하면서도 실무 지침이 되도록 작성하며, 기술 용어(예: API, Swift, Compose)는 영어를 유지할 수 있으나 그 외에는 한글을 사용하세요.
@@ -322,9 +322,9 @@ Language: {language}
 Research Summary:
 {research_summary}
 
-Based on the above, design 5 take-home assignments in the context of OTA services.
-- Each assignment should cover a different Myrealtrip customer journey or OTA feature area, with no overlapping problems.
-- Every assignment must include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
+Based on the above, design one flagship take-home assignment in the context of OTA services.
+- The assignment should tackle the most critical customer journey or OTA feature area for Myrealtrip.
+- Include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
 - Dataset `description` and `columns` should convey information needed to solve the problem, and `records` should be realistic (10-2000).
 - `starter_code` should clearly explain the language, filename, and purpose so candidates can use it immediately.
 - Write all descriptions in Japanese (日本語), keeping technical terms in English.
@@ -341,9 +341,9 @@ Language: {language}
 Research Summary:
 {research_summary}
 
-Based on the above, design 5 take-home assignments in the context of OTA services.
-- Each assignment should cover a different Myrealtrip customer journey or OTA feature area, with no overlapping problems.
-- Every assignment must include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
+Based on the above, design one flagship take-home assignment in the context of OTA services.
+- The assignment should tackle the most critical customer journey or OTA feature area for Myrealtrip.
+- Include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
 - Dataset `description` and `columns` should convey information needed to solve the problem, and `records` should be realistic (10-2000).
 - `starter_code` should clearly explain the language, filename, and purpose so candidates can use it immediately.
 - Write all descriptions in Chinese (中文), keeping technical terms in English.
@@ -360,9 +360,9 @@ Language: {language}
 Research Summary:
 {research_summary}
 
-Based on the above, design 5 take-home assignments in the context of OTA services.
-- Each assignment should cover a different Myrealtrip customer journey or OTA feature area, with no overlapping problems.
-- Every assignment must include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
+Based on the above, design one flagship take-home assignment in the context of OTA services.
+- The assignment should tackle the most critical customer journey or OTA feature area for Myrealtrip.
+- Include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
 - Dataset `description` and `columns` should convey information needed to solve the problem, and `records` should be realistic (10-2000).
 - `starter_code` should clearly explain the language, filename, and purpose so candidates can use it immediately.
 - Write all descriptions in English, keeping technical terms as-is.

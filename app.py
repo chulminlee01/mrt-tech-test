@@ -9,6 +9,7 @@ import io
 import json
 import threading
 import logging
+import time
 from pathlib import Path
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory, Response
@@ -37,6 +38,29 @@ AGENTS = [
     {"id": "builder", "name": "Web Builder", "icon": "🌐", "role": "Portal Creation"},
     {"id": "styler", "name": "Web Designer", "icon": "🎨", "role": "Styling & Design"},
 ]
+
+
+def _run_with_heartbeat(description, func, agent_label="Web Builder", emoji="🌐", interval=30):
+    """Run a blocking function while emitting periodic heartbeat logs."""
+    stop_event = threading.Event()
+    start_time = time.time()
+
+    def heartbeat():
+        while not stop_event.wait(interval):
+            elapsed = int(time.time() - start_time)
+            minutes, seconds = divmod(elapsed, 60)
+            print(
+                f"{emoji} [{agent_label}] {description} (still working… {minutes:02d}:{seconds:02d} elapsed)",
+                flush=True,
+            )
+
+    thread = threading.Thread(target=heartbeat, daemon=True)
+    thread.start()
+    try:
+        return func()
+    finally:
+        stop_event.set()
+        thread.join()
 
 
 class LogCapture(io.StringIO):
@@ -275,9 +299,15 @@ def run_generation(job_id, job_role, job_level, language):
             generation_status[job_id]["progress"] = "Generating starter code..."
             print("🛠️ [System] Generating starter code bundle for the portal...", flush=True)
             try:
-                run_starter_code_generator(
-                    assignments_path=str(assignments_path),
-                    output_dir=str(Path(job_dir) / "starter_code")
+                _run_with_heartbeat(
+                    "Packaging starter code bundle for the portal",
+                    lambda: run_starter_code_generator(
+                        assignments_path=str(assignments_path),
+                        output_dir=str(Path(job_dir) / "starter_code")
+                    ),
+                    agent_label="Web Builder",
+                    emoji="🌐",
+                    interval=25
                 )
                 print("✅ [System] Starter code package ready.", flush=True)
             except Exception as e:
@@ -287,11 +317,17 @@ def run_generation(job_id, job_role, job_level, language):
             generation_status[job_id]["progress"] = "Applying custom styling..."
             print("🧵 [System] Applying custom portal styling and layout polish...", flush=True)
             try:
-                run_web_designer(
-                    html_path=str(html_path),
-                    css_output=str(Path(job_dir) / "styles.css"),
-                    notes_output=str(Path(job_dir) / "design_notes.md"),
-                    language=language
+                _run_with_heartbeat(
+                    "Applying custom portal styling and layout polish",
+                    lambda: run_web_designer(
+                        html_path=str(html_path),
+                        css_output=str(Path(job_dir) / "styles.css"),
+                        notes_output=str(Path(job_dir) / "design_notes.md"),
+                        language=language
+                    ),
+                    agent_label="Web Builder",
+                    emoji="🌐",
+                    interval=25
                 )
                 print("✅ [System] Styling refinements applied.", flush=True)
             except Exception as e:
