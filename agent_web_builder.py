@@ -407,11 +407,11 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
             "starter_resolved": assignment.get("starter_code", {}),
         })
 
+    language = context.get("language", "Korean")
     ui = _ui_strings(language)
     assignments_html = _render_assignments(assignments_prepared, html_dir, ui)
 
     # intro data
-    language = context.get("language", "Korean")
     intro_raw = {**_default_intro(language), **context.get("intro", {})}
     culture_points = intro_raw.get("culture_points", [])
     culture_html = (
