@@ -54,7 +54,91 @@ def _resolve_href(raw: Optional[str], html_dir: Path) -> Optional[str]:
             return os.path.relpath(candidate, html_dir).replace(os.sep, "/")
     return raw
 
-def _default_intro() -> Dict[str, Any]:
+def _default_intro(language: str = "Korean") -> Dict[str, Any]:
+    """Return language-specific intro content."""
+    if language.lower() in ["japanese", "日本語", "japanese (日本語)"]:
+        return {
+            "north_star_title": 'The North Star: "旅行体験の完全な接続"',
+            "north_star_body": (
+                "MyRealtripは、すべての旅行者がより簡単に好みに合った旅行を計画し、体験できる世界を作ります。"
+                "ビジョンを実現するために、最も創造的で革新的な方法で旅行体験を変革する人材を募集しています。"
+            ),
+            "culture_title": "Product Engineer 開発文化",
+            "culture_body": (
+                "AI時代、開発者の役割は一つの分野にとどまりません。MyRealtripのProduct Engineerは、顧客の問題を発見し、"
+                "解決策が実際に効果を発揮するまで最後まで責任を持つ開発者です。私たちは技術的専門性を基盤に、製品と顧客体験全体を包括してこのように働きます。"
+            ),
+            "culture_points": [
+                "顧客中心の問題定義：「何を作るか」より「なぜ作るべきか」を先に考え、問題解決の方向を自ら設定します。",
+                "境界のない問題解決：様々な技術領域の境界を越えて、問題を最も速く解決できる方法を自ら見つけて実行します。",
+                "機敏に実行、改善：複雑な手続きを減らして迅速に決定し、短いフィードバックサイクルで継続的に製品を改善します。",
+                "最後まで責任を持つ姿勢：リリースが終わりではなく、顧客の問題が解決するまで改善と運用を続けます。",
+            ],
+            "ai_guidance_title": "AIツール活用ガイド",
+            "ai_guidance_body": "本課題はGitHub Copilot、ChatGPTなどのAIツールを自由に活用して解決できます。AI時代をリードするProduct EngineerにとってAI活用能力は重要な能力です。",
+            "ai_guidance_note": (
+                "ただし、提出時にREADME.mdファイルにどのツールをどのように活用して問題解決に役立てたかを具体的に記述してください。"
+                "（例：「API通信のためのURLSession基本コードをChatGPTで生成しました。」、「SwiftUIレイアウト関連の問題を解決するためにCopilotの提案を参考にしました。」）"
+            ),
+            "site_invite_text": "MyRealtripが提供する様々な旅行商品とサービスを公式ホームページでご確認ください。",
+            "assignment_choice": "用意された課題の中から実行可能な項目を自由に選択して提出してください。",
+        }
+    elif language.lower() in ["chinese", "中文", "chinese (中文)"]:
+        return {
+            "north_star_title": 'The North Star: "旅行体验的完全连接"',
+            "north_star_body": (
+                "MyRealtrip致力于让所有旅行者更轻松地计划和体验符合自己喜好的旅行。"
+                "为了实现这一愿景，我们正在招募能够以最具创意和创新的方式改变旅行体验的人才。"
+            ),
+            "culture_title": "Product Engineer 开发文化",
+            "culture_body": (
+                "在AI时代，开发者的角色不仅限于一个领域。MyRealtrip的Product Engineer是发现客户问题，"
+                "并对解决方案的实际效果负责到底的开发者。我们以技术专业性为基础，涵盖产品和客户体验的各个方面，这样工作。"
+            ),
+            "culture_points": [
+                "以客户为中心定义问题：先思考"为什么要做"而不是"做什么"，自主设定问题解决的方向。",
+                "无边界问题解决：跨越各种技术领域的边界，自主寻找并执行最快解决问题的方法。",
+                "敏捷执行、改进：减少复杂流程，快速决策，通过短反馈周期持续改进产品。",
+                "负责到底的态度：发布不是终点，持续改进和运营直到客户问题消失。",
+            ],
+            "ai_guidance_title": "AI工具使用指南",
+            "ai_guidance_body": "本课题可以自由使用GitHub Copilot、ChatGPT等AI工具来解决。对于引领AI时代的Product Engineer来说，AI应用能力是重要的能力。",
+            "ai_guidance_note": (
+                "但是，提交时必须在README.md文件中具体说明使用了哪些工具以及如何帮助解决问题。"
+                "（例如："使用ChatGPT生成了用于API通信的URLSession基本代码。"、"参考了Copilot的建议来解决SwiftUI布局相关问题。"）"
+            ),
+            "site_invite_text": "请在官方网站上查看MyRealtrip提供的各种旅行产品和服务。",
+            "assignment_choice": "请从准备好的课题中自由选择可执行的项目提交。",
+        }
+    else:  # English or default
+        return {
+            "north_star_title": 'The North Star: "Complete Connection of Travel Experiences"',
+            "north_star_body": (
+                "MyRealtrip creates a world where all travelers can more easily plan and experience trips that match their preferences. "
+                "To realize this vision, we are looking for talented individuals who will transform travel experiences in the most creative and innovative ways."
+            ),
+            "culture_title": "Product Engineer Development Culture",
+            "culture_body": (
+                "In the AI era, a developer's role does not stay in one field. MyRealtrip's Product Engineers discover customer problems "
+                "and take responsibility until the solution actually works. Based on technical expertise, we work across products and customer experiences in this way."
+            ),
+            "culture_points": [
+                "Customer-Centric Problem Definition: Think about 'why we should build' before 'what to build,' and set the direction of problem-solving yourself.",
+                "Borderless Problem Solving: Cross the boundaries of various technical domains and find and execute the fastest way to solve problems.",
+                "Execute Agilely, Improve: Reduce complex procedures to make quick decisions and continuously improve products with short feedback cycles.",
+                "Responsible to the End: Release is not the end; continue improvement and operation until customer problems disappear.",
+            ],
+            "ai_guidance_title": "AI Tool Usage Guide",
+            "ai_guidance_body": "This assignment can be solved freely using AI tools such as GitHub Copilot and ChatGPT. AI utilization ability is an important competency for Product Engineers leading the AI era.",
+            "ai_guidance_note": (
+                "However, when submitting, you must specifically describe in the README.md file which tools you used and how they helped solve the problem. "
+                "(Example: \"Generated basic URLSession code for API communication using ChatGPT.\", \"Referred to Copilot's suggestions to solve SwiftUI layout issues.\")"
+            ),
+            "site_invite_text": "Check out the various travel products and services provided by MyRealtrip on the official website.",
+            "assignment_choice": "Feel free to choose and submit any of the prepared assignments that you can complete.",
+        }
+    
+    # Korean default
     return {
         "north_star_title": 'The North Star: "여행 경험의 완전한 연결"',
         "north_star_body": (
@@ -67,7 +151,7 @@ def _default_intro() -> Dict[str, Any]:
             "해결책이 실제로 효과를 발휘할 때까지 끝까지 책임지는 개발자입니다. 우리는 기술 전문성을 기반으로, 제품과 고객 경험 전반을 아우르며 이렇게 일합니다."
         ),
         "culture_points": [
-            "고객 중심 문제 정의: “무엇을 만들 것인가?”보다 “왜 만들어야 하는가?”를 먼저 고민하고, 문제 해결의 방향을 스스로 설정합니다.",
+            "고객 중심 문제 정의: "무엇을 만들 것인가?"보다 "왜 만들어야 하는가?"를 먼저 고민하고, 문제 해결의 방향을 스스로 설정합니다.",
             "경계 없는 문제 해결: 다양한 기술 영역의 경계를 넘나들며, 문제를 가장 빠르게 해결할 수 있는 방법을 스스로 찾아 실행합니다.",
             "민첩하게 실행, 개선: 복잡한 절차를 줄여 빠르게 결정하고, 짧은 피드백 주기로 지속적으로 제품을 개선합니다.",
             "끝까지 책임지는 태도: 릴리즈가 끝이 아니라, 고객의 문제가 사라질 때까지 개선과 운영을 이어갑니다.",
@@ -222,7 +306,8 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
     assignments_html = _render_assignments(assignments_prepared, html_dir)
 
     # intro data
-    intro_raw = {**_default_intro(), **context.get("intro", {})}
+    language = context.get("language", "Korean")
+    intro_raw = {**_default_intro(language), **context.get("intro", {})}
     culture_points = intro_raw.get("culture_points", [])
     culture_html = (
         "\n".join(

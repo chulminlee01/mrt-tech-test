@@ -263,15 +263,10 @@ def run_question_generator(
         indent=2,
     )
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """당신은 OTA 산업 전문 채용 디렉터입니다. 모든 결과는 JSON 형식으로 반환하며, 한국어와 영문 기술 용어만 사용하고 한자·중국어 문자를 절대 포함하지 않습니다.""",
-            ),
-            (
-                "user",
-                """회사명: {company_name}
+    # Build language-specific system and user prompts
+    if language.lower() in ["korean", "한국어"]:
+        system_msg = """당신은 OTA 산업 전문 채용 디렉터입니다. 모든 결과는 JSON 형식으로 반환하며, 한국어와 영문 기술 용어만 사용하고 한자·중국어 문자를 절대 포함하지 않습니다."""
+        user_msg = """회사명: {company_name}
 직무: {job_level} {job_role}
 언어: {language}
 
@@ -287,8 +282,69 @@ def run_question_generator(
 
 JSON Schema:
 {schema_description}
-""",
-            ),
+"""
+    elif language.lower() in ["japanese", "日本語", "japanese (日本語)"]:
+        system_msg = """You are an OTA industry recruitment director. Return all results in JSON format. Write all assignment content in Japanese, but keep technical terms (API, Swift, JSON, etc.) in English."""
+        user_msg = """Company: {company_name}
+Role: {job_level} {job_role}
+Language: {language}
+
+Research Summary:
+{research_summary}
+
+Based on the above, design 5 take-home assignments in the context of OTA services.
+- Each assignment should cover a different Myrealtrip customer journey or OTA feature area, with no overlapping problems.
+- Every assignment must include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
+- Dataset `description` and `columns` should convey information needed to solve the problem, and `records` should be realistic (10-2000).
+- `starter_code` should clearly explain the language, filename, and purpose so candidates can use it immediately.
+- Write all descriptions in Japanese (日本語), keeping technical terms in English.
+
+JSON Schema:
+{schema_description}
+"""
+    elif language.lower() in ["chinese", "中文", "chinese (中文)"]:
+        system_msg = """You are an OTA industry recruitment director. Return all results in JSON format. Write all assignment content in Chinese (Simplified), but keep technical terms (API, Swift, JSON, etc.) in English."""
+        user_msg = """Company: {company_name}
+Role: {job_level} {job_role}
+Language: {language}
+
+Research Summary:
+{research_summary}
+
+Based on the above, design 5 take-home assignments in the context of OTA services.
+- Each assignment should cover a different Myrealtrip customer journey or OTA feature area, with no overlapping problems.
+- Every assignment must include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
+- Dataset `description` and `columns` should convey information needed to solve the problem, and `records` should be realistic (10-2000).
+- `starter_code` should clearly explain the language, filename, and purpose so candidates can use it immediately.
+- Write all descriptions in Chinese (中文), keeping technical terms in English.
+
+JSON Schema:
+{schema_description}
+"""
+    else:  # English or default
+        system_msg = """You are an OTA industry recruitment director. Return all results in JSON format. Write all assignment content in English."""
+        user_msg = """Company: {company_name}
+Role: {job_level} {job_role}
+Language: {language}
+
+Research Summary:
+{research_summary}
+
+Based on the above, design 5 take-home assignments in the context of OTA services.
+- Each assignment should cover a different Myrealtrip customer journey or OTA feature area, with no overlapping problems.
+- Every assignment must include at least 1 custom dataset (`datasets`) and starter code metadata (`starter_code`), tightly connected to the assignment requirements.
+- Dataset `description` and `columns` should convey information needed to solve the problem, and `records` should be realistic (10-2000).
+- `starter_code` should clearly explain the language, filename, and purpose so candidates can use it immediately.
+- Write all descriptions in English, keeping technical terms as-is.
+
+JSON Schema:
+{schema_description}
+"""
+    
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_msg),
+            ("user", user_msg),
         ]
     )
 
