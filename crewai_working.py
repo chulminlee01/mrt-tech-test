@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 
 # Optional import - only needed if using Google Search
 try:
-    from agent_researcher import recent_google_search
+from agent_researcher import recent_google_search
     GOOGLE_SEARCH_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️  Google Search not available (import error): {e}")
@@ -62,9 +62,9 @@ class GoogleCSETool(BaseTool):
         
         print(f"\n🔍 [Research Analyst] Executing Google CSE search: '{query[:60]}...'\n", flush=True)
         try:
-        result = recent_google_search(query)
-        print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
-        return result
+            result = recent_google_search(query)
+            print(f"\n✅ [Research Analyst] Search completed - found results\n", flush=True)
+            return result
         except Exception as e:
             print(f"\n⚠️  [Research Analyst] Search failed: {e}\n", flush=True)
             return f"Search failed. Using general knowledge about {query}."
