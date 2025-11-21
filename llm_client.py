@@ -8,13 +8,63 @@ Tries providers in order:
 """
 
 import os
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, Callable, List, Tuple
 from langchain_openai import ChatOpenAI
 
 
 class LLMClientError(Exception):
     """Custom exception for LLM client errors."""
     pass
+
+
+def _is_auth_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    if "401" in text and ("user not found" in text or "unauthorized" in text or "invalid api key" in text):
+        return True
+    return "missing x-openrouter-" in text or "missing required header" in text
+
+
+class ResilientLLM:
+    """Proxy that retries with fallback providers when auth errors occur."""
+
+    def __init__(self, providers: List[Tuple[Callable[[], Tuple[ChatOpenAI, str]], str]]):
+        if not providers:
+            raise LLMClientError("No providers available for resilient LLM.")
+        self.providers = providers
+        self.current_idx = -1
+        self.client: Optional[ChatOpenAI] = None
+        self.provider_label = ""
+        self._switch_to_next()
+
+    def _switch_to_next(self):
+        last_error = None
+        while self.current_idx + 1 < len(self.providers):
+            self.current_idx += 1
+            factory, label = self.providers[self.current_idx]
+            try:
+                client, actual_label = factory()
+                self.client = client
+                self.provider_label = actual_label or label
+                print(f"🤖 [LLM] Using {self.provider_label}", flush=True)
+                return
+            except Exception as exc:
+                last_error = exc
+                print(f"⚠️ [LLM] Provider '{label}' failed during init: {exc}", flush=True)
+        raise LLMClientError(f"Unable to initialize any LLM providers. Last error: {last_error}")
+
+    def invoke(self, *args, **kwargs):
+        while True:
+            try:
+                return self.client.invoke(*args, **kwargs)
+            except Exception as exc:
+                if _is_auth_error(exc):
+                    print(f"⚠️ [LLM] Auth error with {self.provider_label}. Switching provider...", flush=True)
+                    self._switch_to_next()
+                    continue
+                raise
+
+    def __getattr__(self, item):
+        return getattr(self.client, item)
 
 
 def create_nvidia_llm_direct(temperature: float = 0.7, model: Optional[str] = None) -> ChatOpenAI:
@@ -40,15 +90,12 @@ def create_nvidia_llm_direct(temperature: float = 0.7, model: Optional[str] = No
     nvidia_base = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     openrouter_base = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
     
-    last_error: Optional[Exception] = None
-    for idx, model_name in enumerate(fallback_chain, start=1):
-        try:
+    def _factory(model_name: str):
+        def build():
             if model_name.startswith("x-ai/"):
                 if not openrouter_key:
                     raise LLMClientError("OPENROUTER_API_KEY not found for OpenRouter model fallback")
-                print(f"🚀 Creating OpenRouter LLM (attempt {idx})")
-                print(f"   Model: {model_name}")
-                llm = ChatOpenAI(
+                return ChatOpenAI(
                     model=model_name,
                     temperature=temperature,
                     base_url=openrouter_base,
@@ -56,30 +103,26 @@ def create_nvidia_llm_direct(temperature: float = 0.7, model: Optional[str] = No
                     default_headers=_get_openrouter_headers(),
                     request_timeout=120,
                     max_retries=3,
-                )
+                ), f"OpenRouter · {model_name}"
             else:
                 if not nvidia_key:
                     raise LLMClientError("NVIDIA_API_KEY not found")
                 os.environ["OPENAI_API_KEY"] = nvidia_key
                 os.environ["OPENAI_API_BASE"] = nvidia_base
-                print(f"🚀 Creating NVIDIA LLM (attempt {idx})")
-                print(f"   Model: {model_name}")
-                llm = ChatOpenAI(
+                return ChatOpenAI(
                     model=model_name,
                     temperature=temperature,
                     base_url=nvidia_base,
                     api_key=nvidia_key,
                     request_timeout=120,
                     max_retries=3,
-                )
-            print("   ✅ LLM ready")
-            return llm
-        except Exception as err:
-            last_error = err
-            print(f"   ⚠️  LLM creation failed for {model_name}: {err}")
-            continue
-    
-    raise LLMClientError(f"Unable to provision LLM client. Last error: {last_error}")
+                ), f"NVIDIA · {model_name}"
+        return build
+
+    providers: List[Tuple[Callable[[], Tuple[ChatOpenAI, str]], str]] = [
+        (_factory(model_name), model_name) for model_name in fallback_chain
+    ]
+    return ResilientLLM(providers)
 
 
 def _get_nvidia_headers() -> Dict[str, str]:

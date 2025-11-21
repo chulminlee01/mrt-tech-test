@@ -6,7 +6,7 @@ PM initializes → Research → Team Discussion → Question Creation → Review
 import os
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -68,7 +68,6 @@ class GoogleCSETool(BaseTool):
         except Exception as e:
             print(f"\n⚠️  [Research Analyst] Search failed: {e}\n", flush=True)
             return f"Search failed. Using general knowledge about {query}."
-
 
 # ============================================================================
 # Create Agents
@@ -271,7 +270,7 @@ def _run_crewai_classic(
     print("\n📝 Phase 2: Generating Assets based on Crew Plan")
 
     from agent_question_generator import run_question_generator
-
+    
     _log("📝 Generating detailed assignments...")
     _log("🕒 [System] Assignment Generator is crafting scenario variations. This stage can take up to 60 seconds—thanks for waiting.")
     run_question_generator(
@@ -290,7 +289,7 @@ def _run_crewai_classic(
         output_dir=datasets_dir,
         language=language
     )
-
+    
     run_web_builder(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         research_summary_path=CURRENT_RESEARCH_PATH,
@@ -316,29 +315,9 @@ def _log(text: str):
     print(text, flush=True)
 
 
-def _is_auth_error(exc: Exception) -> bool:
-    text = str(exc).lower()
-    if "401" in text and ("user not found" in text or "unauthorized" in text or "invalid api key" in text):
-        return True
-    return "missing x-openrouter- key" in text
-
-
-def _call_llm_text(llm_state: Dict[str, Any], prompt: str) -> str:
-    """Call LLM and return textual response with graceful auth fallback."""
-    client = llm_state["client"]
-    try:
-        response = client.invoke(prompt)
-    except Exception as exc:
-        if not llm_state.get("fallback_used") and _is_auth_error(exc):
-            print("⚠️ [LLM] OpenRouter authentication failed. Falling back to NVIDIA model. "
-                  "Please set a valid OPENROUTER_API_KEY to keep using Grok.", flush=True)
-            fallback_model = os.getenv("NVIDIA_FALLBACK_MODEL", "qwen/qwen3-next-80b-a3b-instruct")
-            fallback_temp = getattr(client, "temperature", 0.4)
-            llm_state["client"] = create_nvidia_llm_direct(temperature=fallback_temp, model=fallback_model)
-            llm_state["fallback_used"] = True
-            response = llm_state["client"].invoke(prompt)
-        else:
-            raise
+def _call_llm_text(llm, prompt: str) -> str:
+    """Call LLM and return textual response."""
+    response = llm.invoke(prompt)
     if hasattr(response, "content"):
         return response.content
     return str(response)
@@ -411,9 +390,7 @@ def _run_simple_pipeline(
     research_path = output_dir / "research_report.txt"
     research_path.parent.mkdir(parents=True, exist_ok=True)
     
-    llm_state: Dict[str, Any] = {
-        "client": create_nvidia_llm_direct(temperature=0.4, model=model)
-    }
+    llm = create_nvidia_llm_direct(temperature=0.4, model=model)
     
     kickoff = (
         f"Team, we're preparing a tech assignment for {job_level} {job_role}. "
@@ -443,7 +420,7 @@ Include sections:
         research_prompt += "\nUse these live Google CSE findings as cited evidence:\n"
         research_prompt += cse_insights
         research_prompt += "\n"
-    research_summary = _call_llm_text(llm_state, research_prompt)
+    research_summary = _call_llm_text(llm, research_prompt)
     research_path.write_text(research_summary, encoding="utf-8")
     _log("✅ Research summary saved.")
     _log("🔍 [Research Analyst] Research findings shared with the crew:")
@@ -477,7 +454,7 @@ Research:
 """
     if language_hint:
         skills_prompt += f"\n{language_hint}\n"
-    skill_focus = _call_llm_text(llm_state, skills_prompt)
+    skill_focus = _call_llm_text(llm, skills_prompt)
     _log(skill_focus)
     
     # Designer confirmation
@@ -495,7 +472,7 @@ Just list the filenames and 1 sentence description for each.
 """
     if language_hint:
         data_prompt += f"\n{language_hint}\n"
-    data_plan = _call_llm_text(llm_state, data_prompt)
+    data_plan = _call_llm_text(llm, data_prompt)
     _log(f"I recommend generating these datasets:\n{data_plan}")
 
     # QA approval
@@ -509,7 +486,7 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
 """
     if language_hint:
         qa_prompt += f"\n{language_hint}\n"
-    qa_decision = _call_llm_text(llm_state, qa_prompt)
+    qa_decision = _call_llm_text(llm, qa_prompt)
     _log(f"[QA] {qa_decision}")
     
     # PM final sign-off
