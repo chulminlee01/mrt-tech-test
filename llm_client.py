@@ -19,9 +19,13 @@ class LLMClientError(Exception):
 
 def _is_auth_error(exc: Exception) -> bool:
     text = str(exc).lower()
-    if "401" in text and ("user not found" in text or "unauthorized" in text or "invalid api key" in text):
+    if "401" in text:
         return True
-    return "missing x-openrouter-" in text or "missing required header" in text
+    if "user not found" in text or "unauthorized" in text or "invalid api key" in text:
+        return True
+    if "authentication" in text or "missing x-openrouter-" in text or "missing required header" in text:
+        return True
+    return False
 
 
 class ResilientLLM:
@@ -53,14 +57,22 @@ class ResilientLLM:
         raise LLMClientError(f"Unable to initialize any LLM providers. Last error: {last_error}")
 
     def invoke(self, *args, **kwargs):
-        while True:
+        max_attempts = len(self.providers)
+        attempts = 0
+        while attempts < max_attempts:
+            attempts += 1
             try:
                 return self.client.invoke(*args, **kwargs)
             except Exception as exc:
                 if _is_auth_error(exc):
-                    print(f"⚠️ [LLM] Auth error with {self.provider_label}. Switching provider...", flush=True)
-                    self._switch_to_next()
-                    continue
+                    print(f"⚠️ [LLM] Auth error with {self.provider_label}: {exc}", flush=True)
+                    if self.current_idx + 1 < len(self.providers):
+                        print(f"🔄 [LLM] Switching to next provider...", flush=True)
+                        self._switch_to_next()
+                        continue
+                    else:
+                        print(f"❌ [LLM] No more providers available. Auth errors on all providers.", flush=True)
+                        raise LLMClientError(f"All LLM providers failed with auth errors. Last: {exc}")
                 raise
 
     def __getattr__(self, item):

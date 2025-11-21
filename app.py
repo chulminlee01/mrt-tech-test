@@ -119,10 +119,10 @@ class LogCapture(io.StringIO):
             agent_status['pm'] = 'completed'
         
         # Research Analyst
-        elif '[research' in text_lower:
+        elif '[research' in text_lower or 'google cse' in text_lower or 'launching google cse' in text_lower:
             set_progress('🔍 Research Analyst investigating...', 'researcher')
             agent_status['researcher'] = 'active'
-        elif 'research summary saved' in text_lower:
+        elif 'research summary saved' in text_lower or 'research findings shared' in text_lower:
             set_progress('✅ Research summary shared with PM...', 'pm')
             agent_status['researcher'] = 'completed'
         
@@ -159,9 +159,11 @@ class LogCapture(io.StringIO):
             agent_status['styler'] = 'completed'
         
         # QA Reviewer
-        elif '[qa' in text_lower or 'final review' in text_lower:
+        elif '[qa' in text_lower or 'final review' in text_lower or 'reviewing plan' in text_lower:
             set_progress('🔎 QA reviewing deliverables...', 'reviewer')
             agent_status['reviewer'] = 'active'
+        elif 'approved' in text_lower and '[qa' in text_lower:
+            agent_status['reviewer'] = 'completed'
         
         # Update agent_status in generation_status
         if agent_status:
