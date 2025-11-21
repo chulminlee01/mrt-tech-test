@@ -227,12 +227,14 @@ class LogCapture(io.StringIO):
         return result
 
 
-def run_generation(job_id, job_role, job_level, language):
+def run_generation(job_id, job_role, job_level, language, model=None):
     """Run the orchestrator in a background thread."""
     global generation_status
     
     print(f"[GENERATION] Thread started for job_id={job_id}", flush=True)
     print(f"[GENERATION] Current generation_status keys: {list(generation_status.keys())}", flush=True)
+    if model:
+        print(f"[GENERATION] Requested model: {model}", flush=True)
     
     try:
         # Ensure status exists (defensive - should be initialized already)
@@ -287,7 +289,8 @@ def run_generation(job_id, job_role, job_level, language):
             job_role=job_role,
             job_level=job_level,
             language=language,
-            output_root=str(job_dir)
+            output_root=str(job_dir),
+            model=model
         )
         print(f"[GENERATION] CrewAI completed for job_id={job_id}", flush=True)
         
@@ -303,7 +306,8 @@ def run_generation(job_id, job_role, job_level, language):
                     "Packaging starter code bundle for the portal",
                     lambda: run_starter_code_generator(
                         assignments_path=str(assignments_path),
-                        output_dir=str(Path(job_dir) / "starter_code")
+                        output_dir=str(Path(job_dir) / "starter_code"),
+                        model=model
                     ),
                     agent_label="Web Builder",
                     emoji="🌐",
@@ -313,9 +317,31 @@ def run_generation(job_id, job_role, job_level, language):
             except Exception as e:
                 print(f"⚠️  Starter code error: {e}", flush=True)
         
+        # Rebuild portal now that starter code metadata is updated
+        if assignments_path.exists():
+            generation_status[job_id]["progress"] = "Rebuilding portal with starter code..."
+            print("🌐 [Web Builder] Building candidate portal with downloadable starter code...", flush=True)
+            try:
+                _run_with_heartbeat(
+                    "Assembling candidate portal with updated assets",
+                    lambda: run_web_builder(
+                        assignments_path=str(assignments_path),
+                        research_summary_path=str(Path(job_dir) / "research_report.txt"),
+                        output_html=str(Path(job_dir) / "index.html"),
+                        language=language,
+                        starter_dir=str(Path(job_dir) / "starter_code")
+                    ),
+                    agent_label="Web Builder",
+                    emoji="🌐",
+                    interval=25
+                )
+                print("✅ [Web Builder] Portal built with starter code links.", flush=True)
+            except Exception as e:
+                print(f"⚠️ [Web Builder] Portal generation error: {e}", flush=True)
+        
         if html_path.exists():
             generation_status[job_id]["progress"] = "Applying custom styling..."
-            print("🧵 [System] Applying custom portal styling and layout polish...", flush=True)
+            print("🎨 [Web Designer] Applying Myrealtrip branding and layout polish...", flush=True)
             try:
                 _run_with_heartbeat(
                     "Applying custom portal styling and layout polish",
@@ -325,11 +351,11 @@ def run_generation(job_id, job_role, job_level, language):
                         notes_output=str(Path(job_dir) / "design_notes.md"),
                         language=language
                     ),
-                    agent_label="Web Builder",
-                    emoji="🌐",
+                    agent_label="Web Designer",
+                    emoji="🎨",
                     interval=25
                 )
-                print("✅ [System] Styling refinements applied.", flush=True)
+                print("✅ [Web Designer] Styling refinements applied.", flush=True)
             except Exception as e:
                 print(f"⚠️  Web designer error: {e}", flush=True)
         
@@ -384,7 +410,10 @@ def run_generation(job_id, job_role, job_level, language):
 def index():
     """Serve the main page."""
     try:
-        return render_template("index.html", agents=AGENTS)
+        default_model = os.getenv("DEFAULT_MODEL", "x-ai/grok-4.1-fast")
+        available_models = os.getenv("AVAILABLE_MODELS", "").split(",")
+        available_models = [m.strip() for m in available_models if m.strip()]
+        return render_template("index.html", agents=AGENTS, default_model=default_model, available_models=available_models)
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
@@ -541,6 +570,7 @@ def generate():
         job_role = data.get("job_role")
         job_level = data.get("job_level")
         language = data.get("language", "Korean")
+        model = (data.get("model") or os.getenv("DEFAULT_MODEL", "x-ai/grok-4.1-fast")).strip()
         
         print(f"[API] Received request: role={job_role}, level={job_level}, lang={language}", flush=True)
         
@@ -566,7 +596,8 @@ def generate():
             "logs": [],
             "agent_status": {},
             "active_agent": None,
-            "started_at": datetime.now().isoformat()
+            "started_at": datetime.now().isoformat(),
+            "model": model
         }
         
         print(f"[API] After initialization - generation_status keys: {list(generation_status.keys())}", flush=True)
@@ -575,7 +606,7 @@ def generate():
         # Start generation in background thread
         thread = threading.Thread(
             target=run_generation,
-            args=(job_id, job_role, job_level, language),
+            args=(job_id, job_role, job_level, language, model),
             name=f"Generation-{job_id}"
         )
         thread.daemon = True

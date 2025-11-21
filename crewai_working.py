@@ -144,7 +144,8 @@ def _run_crewai_classic(
     job_role: str,
     job_level: str,
     language: str,
-    output_dir: Path
+    output_dir: Path,
+    model: Optional[str] = None,
 ) -> Dict:
     """Run working CrewAI with proper collaboration (Hierarchical Process)."""
     
@@ -163,7 +164,7 @@ def _run_crewai_classic(
     
     # Setup LLM - defaulting to NVIDIA Minimax or Qwen
     from llm_client import create_nvidia_llm_direct
-    llm = create_nvidia_llm_direct(temperature=0.4)
+    llm = create_nvidia_llm_direct(temperature=0.4, model=model)
     
     # Create all 6 agents (Designer removed)
     pm, researcher, data_provider, web_builder, web_designer, reviewer = create_working_agents(llm)
@@ -267,9 +268,12 @@ def _run_crewai_classic(
     # This part reuses the deterministic generators to ensure high-quality file output
     # based on the Crew's plan.
     
-    print("\n📝 Phase 2: Generating Assets based on Crew Plan")
-    
+    print(
+        "\n📝 Phase 2: Generating Assets based on Crew Plan"
+    )
+
     from agent_question_generator import run_question_generator
+
     _log("📝 Generating detailed assignments...")
     _log("🕒 [System] Assignment Generator is crafting scenario variations. This stage can take up to 60 seconds—thanks for waiting.")
     run_question_generator(
@@ -278,16 +282,17 @@ def _run_crewai_classic(
         company_name="Myrealtrip OTA",
         input_path=CURRENT_RESEARCH_PATH,
         output_path=CURRENT_ASSIGNMENTS_PATH,
-        language=language
+        language=language,
+        model=model
     )
-    
+
     datasets_dir = str(output_dir / "datasets")
     run_data_provider(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         output_dir=datasets_dir,
         language=language
     )
-    
+
     run_web_builder(
         assignments_path=CURRENT_ASSIGNMENTS_PATH,
         research_summary_path=CURRENT_RESEARCH_PATH,
@@ -379,7 +384,8 @@ def _run_simple_pipeline(
     job_role: str,
     job_level: str,
     language: str,
-    output_dir: Path
+    output_dir: Path,
+    model: Optional[str] = None,
 ) -> Dict:
     """Fast sequential pipeline without CrewAI complexity."""
     load_dotenv()
@@ -387,7 +393,7 @@ def _run_simple_pipeline(
     research_path = output_dir / "research_report.txt"
     research_path.parent.mkdir(parents=True, exist_ok=True)
     
-    llm = create_nvidia_llm_direct(temperature=0.4)
+    llm = create_nvidia_llm_direct(temperature=0.4, model=model)
     
     kickoff = (
         f"Team, we're preparing a tech assignment for {job_level} {job_role}. "
@@ -501,7 +507,8 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
         company_name="Myrealtrip OTA Company",
         input_path=str(research_path),
         output_path=str(assignments_path),
-        language=language
+        language=language,
+        model=model
     )
     _log("✅ Assignments generated.")
     
@@ -514,24 +521,6 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
         language=language
     )
     _log("✅ Datasets created.")
-    
-    # Web Builder
-    _log("🌐 [Web Builder] Building candidate portal...")
-    _log("I'll create a professional HTML portal with all assignment details.")
-    run_web_builder(
-        assignments_path=str(assignments_path),
-        research_summary_path=str(research_path),
-        output_html=str(output_dir / "index.html"),
-        language=language,
-        starter_dir=str(output_dir / "starter_code")
-    )
-    _log("✅ Portal built.")
-    
-    # Web Designer
-    _log("🎨 [Web Designer] Applying Myrealtrip branding...")
-    _log("I'll style the portal with emerald green and modern design.")
-    # Web designer runs as part of web_builder above
-    _log("✅ Styling applied.")
     
     # Final QA
     _log("🔎 [QA Reviewer] Final review - All deliverables look excellent!")
@@ -559,7 +548,8 @@ def generate_with_crewai(
     job_role: str,
     job_level: str = "Senior",
     language: str = "Korean",
-    output_root: str = "output"
+    output_root: str = "output",
+    model: Optional[str] = None
 ) -> Dict:
     """Generate tech test using simple pipeline (default) or legacy CrewAI."""
     
@@ -591,7 +581,8 @@ def generate_with_crewai(
             job_role=job_role,
             job_level=job_level,
             language=language,
-            output_dir=output_dir
+            output_dir=output_dir,
+            model=model
         )
     
     print("🧠 Using Full CrewAI Collaboration Pipeline (Hierarchical)")
@@ -599,7 +590,8 @@ def generate_with_crewai(
         job_role=job_role,
         job_level=job_level,
         language=language,
-        output_dir=output_dir
+        output_dir=output_dir,
+        model=model
     )
 
 
@@ -611,6 +603,7 @@ if __name__ == "__main__":
     parser.add_argument("--job-level", default="Senior")
     parser.add_argument("--language", default="Korean")
     parser.add_argument("--output-root", default="output")
+    parser.add_argument("--model", help="Override default LLM model")
     
     args = parser.parse_args()
     
@@ -618,7 +611,8 @@ if __name__ == "__main__":
         job_role=args.job_role,
         job_level=args.job_level,
         language=args.language,
-        output_root=args.output_root
+        output_root=args.output_root,
+        model=args.model
     )
     
     print()

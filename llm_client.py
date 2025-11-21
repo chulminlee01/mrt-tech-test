@@ -17,20 +17,23 @@ class LLMClientError(Exception):
     pass
 
 
-def create_nvidia_llm_direct(temperature: float = 0.7) -> ChatOpenAI:
+def create_nvidia_llm_direct(temperature: float = 0.7, model: Optional[str] = None) -> ChatOpenAI:
     """
     Create primary LLM client with automatic fallback between custom and stable NVIDIA models.
     """
-    default_model = os.getenv("DEFAULT_MODEL", "").strip()
-    fallback_chain = [
-        m.strip()
-        for m in [
-            default_model,
-            os.getenv("NVIDIA_FALLBACK_MODEL", "qwen/qwen3-next-80b-a3b-instruct"),
-            "meta/llama-3.1-8b-instruct",
-        ]
-        if m
+    preferred_model = (model or os.getenv("DEFAULT_MODEL", "")).strip()
+    fallback_candidates = [
+        preferred_model,
+        os.getenv("NVIDIA_FALLBACK_MODEL", "qwen/qwen3-next-80b-a3b-instruct"),
+        "meta/llama-3.1-8b-instruct",
     ]
+    seen = set()
+    fallback_chain = []
+    for candidate in fallback_candidates:
+        candidate = (candidate or "").strip()
+        if candidate and candidate not in seen:
+            fallback_chain.append(candidate)
+            seen.add(candidate)
     
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
     nvidia_key = os.getenv("NVIDIA_API_KEY")

@@ -1493,6 +1493,29 @@
           </select>
         </div>
 
+        {% set _default_model = default_model or 'x-ai/grok-4.1-fast' %}
+        {% set _model_options = [
+          ('x-ai/grok-4.1-fast', 'OpenRouter · Grok 4.1 Fast (recommended)'),
+          ('qwen/qwen3-next-80b-a3b-instruct', 'NVIDIA · Qwen 3 Next 80B'),
+          ('deepseek-ai/deepseek-v3.1-terminus', 'NVIDIA · DeepSeek v3.1 Terminus'),
+          ('meta/llama-3.1-8b-instruct', 'NVIDIA · Llama 3.1 8B')
+        ] %}
+        <div class="form-group">
+          <label for="llmModel">LLM Model *</label>
+          <select id="llmModel" name="model" required>
+            {% for value, label in _model_options %}
+              <option value="{{ value }}" {% if value == _default_model %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+            {% if available_models %}
+              {% for value in available_models %}
+                {% if value %}
+                  <option value="{{ value }}" {% if value == _default_model %}selected{% endif %}>{{ value }}</option>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+
         <button type="submit" class="btn" id="generateBtn">
           <span id="btnText">🚀 Generate Tech Test</span>
         </button>
@@ -1733,7 +1756,8 @@
       const formData = {
         job_role: document.getElementById('jobRole').value,
         job_level: document.getElementById('jobLevel').value,
-        language: document.getElementById('language').value
+        language: document.getElementById('language').value,
+        model: document.getElementById('llmModel').value
       };
       
       console.log('📋 Form data:', formData);
