@@ -14,6 +14,11 @@
 - **Automatic assets**: synthetic datasets, starter code bundles, localized candidate portal, styling, and downloadable links regenerated after every run.
 - **Resilient orchestration**: heartbeats during long tasks, per-job logging, fallback model chain, and cleaned-up repo (no generated artifacts tracked).
 
+## ⏱️ Typical Runtime
+- **Research & planning:** 3–4 minutes (LLM calls + optional Google CSE citations)
+- **Asset generation:** 3–6 minutes (datasets, starter code compilation, portal build + styling)
+- **Overall:** expect **~6–10 minutes** per assignment depending on model latency and starter-code complexity
+
 ## 🚀 Quick Start
 ```bash
 # 1. Clone & enter

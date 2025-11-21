@@ -12,7 +12,7 @@ import logging
 import time
 from pathlib import Path
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, send_from_directory, Response
+from flask import Flask, render_template, request, jsonify, send_from_directory, Response, abort, send_file
 
 # Suppress BrokenPipeError from CrewAI logging
 logging.getLogger().addHandler(logging.NullHandler())
@@ -685,10 +685,26 @@ def get_logs(job_id):
     })
 
 
-@app.route("/output/<path:filename>")
-def output_files(filename):
-    """Serve generated output files."""
-    return send_from_directory("output", filename)
+@app.route("/output/", defaults={"path": ""})
+@app.route("/output/<path:path>")
+def output_files(path):
+    """Serve generated output files with directory safeguards."""
+    root = Path("output").resolve()
+    requested = (root / path).resolve()
+
+    # Prevent directory traversal
+    if not str(requested).startswith(str(root)):
+        abort(404)
+
+    if requested.is_dir():
+        requested = requested / "index.html"
+
+    if not requested.exists():
+        # Helpful log for debugging missing files on hosting platforms
+        print(f"⚠️  Requested output file not found: {requested}", flush=True)
+        abort(404)
+
+    return send_file(requested)
 
 
 @app.route("/api/jobs")
