@@ -80,6 +80,60 @@ Each dataset and starter file is surfaced on the portal with working download li
 - `agent_*` modules – Specialized generators for questions, datasets, starter code, and portal.
 - `llm_client.py` – Provider-aware client with explicit model selection + fallbacks (OpenRouter ↔ NVIDIA).
 
+## 🧱 Architecture Overview
+```
+┌──────────────┐     fetch               ┌──────────────────────────┐
+│  Browser UI  │ ────────────────►      │        Flask API         │
+│ (index.html) │   /api/generate        │        (app.py)          │
+└──────────────┘ ◄───────────────      └────────┬─────────────────┘
+        ▲             /api/status/logs                     │
+        │                                                 │ kicks off
+        │ websockets not needed                           ▼
+┌────────────────────────────────────────────────────────────────────┐
+│          Deterministic Crew Pipeline (crewai_working.py)           │
+│                                                                    │
+│  PM kickoff → Research LLM → Skill alignment → QA sign-off →       │
+│  Assignment generator (agent_question_generator.py)                │
+│  Data provider (agent_data_provider.py)                            │
+│  Starter code builder (agent_starter_code.py)                      │
+│  Portal builder + designer (agent_web_builder.py / agent_web_designer.py) │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+                            │ writes artifacts
+                            ▼
+                  `output/<role>_<level>_<timestamp>/`
+                     ├── research_report.txt
+                     ├── assignments.json
+                     ├── datasets/
+                     ├── starter_code/
+                     ├── index.html + styles.css + design_notes.md
+                            │
+                            ▼
+                 Served back to the UI as a download link
+```
+
+- **State tracking:** `app.py` captures stdout from every agent log and keeps an in-memory `generation_status` record per job (progress label, active agent, portal path, elapsed time).
+- **Heartbeats:** Long-running tasks (starter code, styling) wrap their work in `_run_with_heartbeat`, so every 25 seconds the backend emits “still working” logs the UI can display.
+- **Model abstraction:** All LLM calls route through `llm_client.py`, which honors the UI dropdown choice and automatically falls back through NVIDIA and OpenRouter chains.
+- **Artifact integrity:** After starter code finishes, the portal is rebuilt to ensure all download links point to real files before styling is applied.
+
+## 🤝 CrewAI Example Run
+The timeline below mirrors the actual logs captured in `crewai_working.py` and rendered in the UI.
+
+| Time | Agent | What happens |
+|------|-------|--------------|
+| 00:00 | 👔 PM | `Team, we're preparing a tech assignment for Senior Frontend Developer...` |
+| 00:05 | 🔍 Research Analyst | `Investigating best practices...` + Google CSE citations like `(参考: igotanoffer.com)` |
+| 01:00 | 👔 PM | `Aligning on skill focus areas with team...` |
+| 01:10 | ✏️ Assignment Generator | `I'll craft one flagship assignment... Assignment Generator is crafting scenario variations...` |
+| 02:00 | 📊 Data Provider | `Generated dataset for assignment -> .../datasets/hotels.json` (repeated per dataset) |
+| 02:30 | 🌐 Web Builder | `Building candidate portal... I'll create a professional HTML portal with all assignment details.` |
+| 02:45 | 🎨 Web Designer | `Applying Myrealtrip branding... Styling applied.` |
+| 03:00 | 🔎 QA + 👔 PM | `Final review - All deliverables look excellent!` → `FINAL APPROVAL: Portal ready for candidates. Great teamwork! 🎉` |
+| 03:05 | 🌐 Web Builder | `Generating starter code bundle for the portal...` (heartbeats every ~25s) → `Final assets ready. Publishing portal link...` |
+
+Those logs simultaneously update the crew grid, timeline, focus banner, and the discussion modal so users can see the entire process in-context.
+
 ## ☁️ Deployment
 ### Railway (current production)
 The repo includes `railway.json`, `render.yaml`, and helper scripts. The live deployment runs on Railway and can be accessed here:
@@ -96,6 +150,12 @@ Environment variables are pulled from Railway's dashboard; remember to add your 
 ### Local / Docker
 - `./start_webapp.sh` (Mac/Linux) or `python app.py` (any OS).
 - `Dockerfile` is available if you want a containerized run (e.g., `docker build -t mrt-tech-test .`).
+
+## 📚 Documentation
+All historical and deep-dive docs now live in `docs/` (moved out of the root for clarity):
+- `docs/ARCHITECTURE.md` – extended diagrams, sequence charts, and data contracts.
+- `docs/DEPLOYMENT_GUIDE.md`, `docs/RAILWAY_DEPLOY.md`, `docs/READY_TO_USE.md` – deployment playbooks.
+- `docs/TROUBLESHOOTING.md`, `docs/URGENT_FIX.md`, etc. – past incidents and fixes.
 
 ## 🐞 Troubleshooting
 - **Stuck on "Finalizing deliverables"?** Check the long-task banner: it shows elapsed time + step. The backend emits heartbeats every 25s.
