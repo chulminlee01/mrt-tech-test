@@ -119,7 +119,7 @@ class LogCapture(io.StringIO):
             agent_status['pm'] = 'completed'
         
         # Research Analyst
-        elif '[research' in text_lower or 'google cse' in text_lower or 'launching google cse' in text_lower:
+        elif '[research' in text_lower or 'google cse' in text_lower or 'launching google cse' in text_lower or 'investigating best practices' in text_lower:
             set_progress('🔍 Research Analyst investigating...', 'researcher')
             agent_status['researcher'] = 'active'
         elif 'research summary saved' in text_lower or 'research findings shared' in text_lower:
@@ -127,7 +127,7 @@ class LogCapture(io.StringIO):
             agent_status['researcher'] = 'completed'
         
         # Assignment Generator / Designer
-        elif '[designer' in text_lower or 'assignment generator' in text_lower or 'generating detailed assignments' in text_lower:
+        elif '[designer' in text_lower or 'assignment generator' in text_lower or 'generating detailed assignments' in text_lower or 'crafting scenario' in text_lower:
             set_progress('📝 Assignment Generator crafting challenges...', 'designer')
             agent_status['designer'] = 'active'
         elif 'assignments generated' in text_lower or 'assignments ready' in text_lower:
@@ -135,12 +135,16 @@ class LogCapture(io.StringIO):
             agent_status['designer'] = 'completed'
         
         # Data Provider  
-        elif '[data provider]' in text_lower or 'creating datasets' in text_lower:
+        elif '[data provider]' in text_lower or 'creating datasets' in text_lower or 'reviewing data requirements' in text_lower:
             set_progress('📊 Data Provider creating datasets...', 'data')
             agent_status['data'] = 'active'
-        elif 'datasets created' in text_lower:
-            set_progress('✅ Datasets ready. Web Builder preparing portal...', 'builder')
-            agent_status['data'] = 'completed'
+        elif 'datasets created' in text_lower or 'recommend generating these datasets' in text_lower:
+            # Mark as active but not complete until "datasets created"
+            if 'datasets created' in text_lower:
+                set_progress('✅ Datasets ready. Web Builder preparing portal...', 'builder')
+                agent_status['data'] = 'completed'
+            else:
+                agent_status['data'] = 'active'
         
         # Web Builder
         elif '[web builder]' in text_lower or 'building candidate portal' in text_lower:
@@ -163,7 +167,12 @@ class LogCapture(io.StringIO):
             set_progress('🔎 QA reviewing deliverables...', 'reviewer')
             agent_status['reviewer'] = 'active'
         elif 'approved' in text_lower and '[qa' in text_lower:
-            agent_status['reviewer'] = 'completed'
+            # Stay active until final QA step
+            if 'final review' in text_lower:
+                 agent_status['reviewer'] = 'completed'
+            else:
+                 # Initial plan approval - still active in flow
+                 pass
         
         # Update agent_status in generation_status
         if agent_status:
