@@ -438,14 +438,30 @@ JSON Schema:
         if parsed is not None:
             print("✅ Recovered JSON via YAML repair fallback")
         else:
-            print("⚠️  YAML repair unavailable or unsuccessful, attempting regex extraction...")
-            array_match = re.search(r'"assignments"\s*:\s*\[([\s\S]*)\]', cleaned_json)
-            if array_match:
-                try:
-                    fallback = '{"assignments": [' + array_match.group(1) + ']}'
-                    parsed = json.loads(fallback)
-                    print("✅ Recovered JSON using fallback extraction")
-                except json.JSONDecodeError:
+            print("⚠️  YAML repair unavailable or unsuccessful, attempting aggressive cleanup...")
+            # Try more aggressive normalization for CJK output
+            aggressive_clean = cleaned_json
+            # Replace any remaining full-width characters
+            aggressive_clean = aggressive_clean.replace('，', ',').replace('：', ':').replace('；', ';')
+            aggressive_clean = aggressive_clean.replace('（', '(').replace('）', ')')
+            aggressive_clean = aggressive_clean.replace('【', '[').replace('】', ']')
+            aggressive_clean = aggressive_clean.replace('｛', '{').replace('｝', '}')
+            # Try to parse again
+            try:
+                parsed = json.loads(aggressive_clean)
+                print("✅ Recovered JSON via aggressive CJK normalization")
+            except json.JSONDecodeError:
+                # Last resort: regex extraction
+                print("⚠️  Attempting regex extraction as last resort...")
+                array_match = re.search(r'"assignments"\s*:\s*\[([\s\S]*)\]', aggressive_clean)
+                if array_match:
+                    try:
+                        fallback = '{"assignments": [' + array_match.group(1) + ']}'
+                        parsed = json.loads(fallback)
+                        print("✅ Recovered JSON using fallback extraction")
+                    except json.JSONDecodeError:
+                        parsed = None
+                else:
                     parsed = None
 
         if parsed is None:
