@@ -121,6 +121,14 @@ def create_nvidia_llm_direct(temperature: float = 0.7, model: Optional[str] = No
                     raise LLMClientError("NVIDIA_API_KEY not found")
                 os.environ["OPENAI_API_KEY"] = nvidia_key
                 os.environ["OPENAI_API_BASE"] = nvidia_base
+                
+                # Configure extra_body for DeepSeek thinking if applicable
+                model_kwargs = {}
+                if "deepseek" in model_name.lower() and "terminus" in model_name.lower():
+                    model_kwargs["extra_body"] = {
+                        "chat_template_kwargs": {"thinking": True}
+                    }
+                
                 return ChatOpenAI(
                     model=model_name,
                     temperature=temperature,
@@ -128,6 +136,7 @@ def create_nvidia_llm_direct(temperature: float = 0.7, model: Optional[str] = No
                     api_key=nvidia_key,
                     request_timeout=120,
                     max_retries=3,
+                    model_kwargs=model_kwargs,
                 ), f"NVIDIA · {model_name}"
         return build
 

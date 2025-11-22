@@ -5,6 +5,7 @@ PM initializes → Research → Team Discussion → Question Creation → Review
 
 import os
 import json
+import time
 from pathlib import Path
 from typing import Optional, Dict
 from datetime import datetime
@@ -384,13 +385,31 @@ def _run_simple_pipeline(
     output_dir: Path,
     model: Optional[str] = None,
 ) -> Dict:
-    """Fast sequential pipeline without CrewAI complexity."""
+    """Fast sequential pipeline with role-specific models."""
     load_dotenv()
     
     research_path = output_dir / "research_report.txt"
     research_path.parent.mkdir(parents=True, exist_ok=True)
     
-    llm = create_nvidia_llm_direct(temperature=0.4, model=model)
+    # Models: Use fast model for assignment generation, thinking model for planning/reasoning
+    fast_model_name = "x-ai/grok-4.1-fast"
+    thinking_model_name = "deepseek-ai/deepseek-v3.1-terminus"
+    
+    # Determine primary model (reasoning)
+    # If user provided a model, use it. Otherwise default to Thinking Model.
+    primary_model = model if model else thinking_model_name
+    
+    # Determine generation model (long task)
+    # User requested Grok for long task explicitly.
+    # Fallback to primary if OPENROUTER_API_KEY missing.
+    if os.getenv("OPENROUTER_API_KEY"):
+        gen_model = fast_model_name
+        _log(f"⚡ [System] Selected high-speed model ({gen_model}) for heavy generation task.")
+    else:
+        gen_model = primary_model
+        _log(f"⚠️ [System] OPENROUTER_API_KEY not found. Using primary model ({gen_model}) for generation.")
+
+    llm_primary = create_nvidia_llm_direct(temperature=0.4, model=primary_model)
     
     kickoff = (
         f"Team, we're preparing a tech assignment for {job_level} {job_role}. "
@@ -399,11 +418,15 @@ def _run_simple_pipeline(
     _log(kickoff)
     
     language_hint = _language_hint(language)
-    # Research summary
+    
+    # --- STEP 1: Research ---
     _log("🔍 [Research Analyst] Investigating best practices...")
+    time.sleep(1) # Rate limit buffer
+    
     cse_insights = _fetch_google_cse_insights(job_role, job_level)
     if cse_insights:
         _log("🌐 [Research Analyst] Incorporating Google CSE findings into research summary.")
+        
     research_prompt = f"""
 You are a research analyst specializing in OTA (Online Travel Agency) hiring.
 Provide a concise summary (8-10 bullet points) for designing take-home tests targeting {job_level} {job_role}.
@@ -420,27 +443,26 @@ Include sections:
         research_prompt += "\nUse these live Google CSE findings as cited evidence:\n"
         research_prompt += cse_insights
         research_prompt += "\n"
-    research_summary = _call_llm_text(llm, research_prompt)
+    
+    research_summary = _call_llm_text(llm_primary, research_prompt)
     research_path.write_text(research_summary, encoding="utf-8")
     _log("✅ Research summary saved.")
+    
     _log("🔍 [Research Analyst] Research findings shared with the crew:")
-    summary_lines = [
-        line.strip("•- \t")
-        for line in research_summary.splitlines()
-    ]
+    summary_lines = [line.strip("•- \t") for line in research_summary.splitlines()]
     displayed = 0
     for line in summary_lines:
         clean = line.strip()
-        if not clean:
-            continue
+        if not clean: continue
         _log(f"🔍 [Research Analyst] {clean}")
         displayed += 1
-        if displayed >= 12:
-            break
+        if displayed >= 12: break
     if displayed < len([l for l in summary_lines if l.strip()]):
         _log("🔍 [Research Analyst] …additional research insights recorded in research_report.txt.")
     
-    # Skill focus with team discussion simulation
+    time.sleep(2) # Rate limit buffer
+
+    # --- STEP 2: PM & Skills ---
     _log("💬 [PM] Aligning on skill focus areas with team...")
     skills_prompt = f"""
 Based on the research summary below, act as a Technical Lead and list 5 skill areas we must test for {job_level} {job_role}.
@@ -454,14 +476,15 @@ Research:
 """
     if language_hint:
         skills_prompt += f"\n{language_hint}\n"
-    skill_focus = _call_llm_text(llm, skills_prompt)
+    skill_focus = _call_llm_text(llm_primary, skills_prompt)
     _log(skill_focus)
     
-    # Designer confirmation
     _log("✏️ [Designer] Acknowledging assignment creation plan.")
     _log("I'll craft one flagship assignment that covers these priority skills.")
     
-    # Data Provider Input
+    time.sleep(2) # Rate limit buffer
+
+    # --- STEP 3: Data Plan ---
     _log("📊 [Data Provider] Reviewing data requirements...")
     data_prompt = f"""
 Based on these skills for a {job_role} test:
@@ -472,10 +495,12 @@ Just list the filenames and 1 sentence description for each.
 """
     if language_hint:
         data_prompt += f"\n{language_hint}\n"
-    data_plan = _call_llm_text(llm, data_prompt)
+    data_plan = _call_llm_text(llm_primary, data_prompt)
     _log(f"I recommend generating these datasets:\n{data_plan}")
 
-    # QA approval
+    time.sleep(2) # Rate limit buffer
+
+    # --- STEP 4: QA Review ---
     _log("🔎 [QA] Reviewing plan completeness...")
     qa_prompt = f"""
 Review this plan for a {job_level} {job_role} test:
@@ -486,18 +511,20 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
 """
     if language_hint:
         qa_prompt += f"\n{language_hint}\n"
-    qa_decision = _call_llm_text(llm, qa_prompt)
+    qa_decision = _call_llm_text(llm_primary, qa_prompt)
     _log(f"[QA] {qa_decision}")
     
-    # PM final sign-off
     _log("👔 [PM] DECISION: APPROVED. Ready for delivery. Great collaboration, team!")
     
-    # Use assignment generator (existing workflow)
+    time.sleep(2) # Rate limit buffer
+
+    # --- STEP 5: Assignment Generation (Long Task) ---
     from agent_question_generator import run_question_generator
     
     assignments_path = output_dir / "assignments.json"
     _log("📝 Generating detailed assignments...")
     _log("🕒 [System] Assignment Generator is crafting scenario variations. This stage can take up to 60 seconds—thanks for waiting.")
+    
     run_question_generator(
         job_role=job_role,
         job_level=job_level,
@@ -505,11 +532,11 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
         input_path=str(research_path),
         output_path=str(assignments_path),
         language=language,
-        model=model
+        model=gen_model
     )
     _log("✅ Assignments generated.")
     
-    # Data Provider
+    # --- STEP 6: Data Generation ---
     _log("📊 [Data Provider] Creating realistic OTA datasets...")
     _log("I'll generate hotels, flights, and bookings data for testing.")
     run_data_provider(
@@ -519,7 +546,7 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
     )
     _log("✅ Datasets created.")
     
-    # Final QA
+    # --- STEP 7: Final QA & Finish ---
     _log("🔎 [QA Reviewer] Final review - All deliverables look excellent!")
     _log("👔 [PM] FINAL APPROVAL: Portal ready for candidates. Great teamwork! 🎉")
     _log("🕒 [System] Finalizing datasets, starter code, and portal assets. This step can take up to 90 seconds—please keep this window open.")
@@ -530,11 +557,6 @@ Is this sufficient for a senior-level assessment? Answer with "APPROVED" and a 1
         "output_dir": str(output_dir),
         "portal_ready": True
     }
-
-
-# ============================================================================
-# Main Entry Point
-# ============================================================================
 
 
 # ============================================================================
@@ -615,4 +637,3 @@ if __name__ == "__main__":
     print()
     print("✅ Complete!")
     print(f"📂 Output: {result['output_dir']}")
-
