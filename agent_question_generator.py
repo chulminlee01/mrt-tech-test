@@ -102,7 +102,13 @@ def _extract_json_payload(raw: str) -> str:
     match = re.search(r'\{[\s\S]*\}', stripped)
     if match:
         candidate = match.group(0).strip()
+        # Remove trailing commas again for fallback path
         candidate = re.sub(r',(\s*[}\]])', r'\1', candidate)
+        # Attempt to balance braces if truncated
+        open_braces = candidate.count('{')
+        close_braces = candidate.count('}')
+        if open_braces > close_braces:
+            candidate += '}' * (open_braces - close_braces)
         return candidate
     return stripped
 
