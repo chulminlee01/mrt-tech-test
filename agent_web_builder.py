@@ -429,7 +429,8 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
     assignments_html = _render_assignments(assignments_prepared, html_dir, ui)
 
     # intro data
-    intro_raw = {**_default_intro(language), **context.get("intro", {})}
+    intro_data = context.get("intro") or {}
+    intro_raw = {**_default_intro(language), **intro_data}
     culture_points = intro_raw.get("culture_points", [])
     culture_html = (
         "\n".join(
@@ -445,21 +446,21 @@ def _build_html(context: Dict[str, Any], html_path: Path) -> str:
     )
 
     # company/hero copy (no eyebrow text wanted)
-    company = context.get("company", {})
-    job_level = escape(company.get("job_level", "").strip())
-    job_role = escape(company.get("job_role", "").strip())
+    company = context.get("company") or {}
+    job_level = escape(str(company.get("job_level") or "").strip())
+    job_role = escape(str(company.get("job_role") or "").strip())
     hero_role = " ".join(part for part in [job_level, job_role] if part).strip() or "Mid-level AOS Developer"
 
-    page_title = escape(context.get("page_title", "Myrealtrip Take-Home Portal"))
-    assignment_choice = escape(intro_raw.get("assignment_choice"))
-    site_invite = escape(intro_raw.get("site_invite_text"))
-    north_star_title = escape(intro_raw.get("north_star_title"))
-    north_star_body = escape(intro_raw.get("north_star_body"))
-    culture_title = escape(intro_raw.get("culture_title"))
-    culture_body = escape(intro_raw.get("culture_body"))
-    ai_guidance_title = escape(intro_raw.get("ai_guidance_title"))
-    ai_guidance_body = escape(intro_raw.get("ai_guidance_body"))
-    ai_guidance_note = escape(intro_raw.get("ai_guidance_note"))
+    page_title = escape(str(context.get("page_title") or "Myrealtrip Take-Home Portal"))
+    assignment_choice = escape(str(intro_raw.get("assignment_choice") or ""))
+    site_invite = escape(str(intro_raw.get("site_invite_text") or ""))
+    north_star_title = escape(str(intro_raw.get("north_star_title") or ""))
+    north_star_body = escape(str(intro_raw.get("north_star_body") or ""))
+    culture_title = escape(str(intro_raw.get("culture_title") or ""))
+    culture_body = escape(str(intro_raw.get("culture_body") or ""))
+    ai_guidance_title = escape(str(intro_raw.get("ai_guidance_title") or ""))
+    ai_guidance_body = escape(str(intro_raw.get("ai_guidance_body") or ""))
+    ai_guidance_note = escape(str(intro_raw.get("ai_guidance_note") or ""))
 
     css_styles = """
       :root{

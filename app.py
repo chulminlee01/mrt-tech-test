@@ -349,7 +349,9 @@ def run_generation(job_id, job_role, job_level, language, model=None):
                 print("✅ [Web Builder] Portal built with starter code links.", flush=True)
             except Exception as e:
                 print(f"⚠️ [Web Builder] Portal generation error: {e}", flush=True)
-        
+                import traceback
+                traceback.print_exc()
+
         if html_path.exists():
             generation_status[job_id]["progress"] = "Applying custom styling..."
             print("🎨 [Web Designer] Applying Myrealtrip branding and layout polish...", flush=True)
@@ -369,6 +371,9 @@ def run_generation(job_id, job_role, job_level, language, model=None):
                 print("✅ [Web Designer] Styling refinements applied.", flush=True)
             except Exception as e:
                 print(f"⚠️  Web designer error: {e}", flush=True)
+                import traceback
+                traceback.print_exc()
+
         
         # Success - Always check if portal exists after generation
         portal_path = Path(job_dir) / "index.html"
