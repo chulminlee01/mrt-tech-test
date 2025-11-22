@@ -1488,8 +1488,6 @@
           <select id="language" name="language" required>
             <option value="Korean">Korean (한국어)</option>
             <option value="English">English</option>
-            <option value="Japanese">Japanese (日本語)</option>
-            <option value="Chinese">Chinese (中文)</option>
           </select>
         </div>
 
@@ -1629,6 +1627,9 @@
         <a href="#" id="resultLink" class="result-link" target="_blank">
           📄 View Generated Tech Test
         </a>
+        <button type="button" class="btn btn--secondary" onclick="window.location.reload()" style="margin-top: 1rem; background: var(--slate-100); color: var(--text-color); border: 2px solid var(--slate-300);">
+          ✨ Create New Test
+        </button>
       </div>
     </div>
 
@@ -1987,6 +1988,12 @@
       document.getElementById('statusCard').classList.add('visible');
       document.querySelector('.form-card').style.display = 'none';
       
+      // Hide recent jobs section during generation
+      const jobsSection = document.getElementById('jobsSection');
+      if (jobsSection) {
+        jobsSection.style.display = 'none';
+      }
+      
       // Initialize agent cards
       initializeAgents();
       
@@ -2286,16 +2293,24 @@
           const jobsSection = document.getElementById('jobsSection');
           const jobsList = document.getElementById('jobsList');
           
-          jobsList.innerHTML = result.jobs.slice(0, 5).map(job => `
-            <div class="job-card">
-              <div class="job-card__header">
-                <div class="job-card__title">${job.started_at ? new Date(job.started_at).toLocaleString() : 'N/A'}</div>
-                <span class="job-card__badge job-card__badge--${job.status}">${job.status}</span>
+          jobsList.innerHTML = result.jobs.slice(0, 10).map(job => {
+            const timestamp = job.started_at ? new Date(job.started_at).toLocaleString() : 'N/A';
+            const statusBadge = `<span class="job-card__badge job-card__badge--${job.status}">${job.status}</span>`;
+            const viewLink = job.index_url && job.status === 'completed' 
+              ? `<a href="${job.index_url}" target="_blank" class="result-link" style="margin-top: 0.75rem; display: inline-flex; font-size: 0.875rem; padding: 0.5rem 1rem;">📄 View Portal</a>` 
+              : '';
+            
+            return `
+              <div class="job-card">
+                <div class="job-card__header">
+                  <div class="job-card__title">${timestamp}</div>
+                  ${statusBadge}
+                </div>
+                <div class="job-card__info">${job.progress || 'No details available'}</div>
+                ${viewLink}
               </div>
-              <div class="job-card__info">${job.progress}</div>
-              ${job.index_url ? `<a href="${job.index_url}" target="_blank" class="result-link" style="margin-top: 0.75rem; display: inline-flex;">View Result</a>` : ''}
-            </div>
-          `).join('');
+            `;
+          }).join('');
           
           jobsSection.style.display = 'block';
         }
