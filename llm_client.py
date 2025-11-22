@@ -20,6 +20,8 @@ class LLMClientError(Exception):
 
 def _is_auth_error(exc: Exception) -> bool:
     text = str(exc).lower()
+    if "expected a runnable" in text:
+        return False
     if "401" in text:
         return True
     if "user not found" in text or "unauthorized" in text or "invalid api key" in text:

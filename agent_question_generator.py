@@ -87,6 +87,10 @@ def _extract_json_payload(raw: str) -> str:
         match = re.search(r'\{[\s\S]*\}', candidate)
         if match:
             candidate = match.group(0)
+        
+        # Remove trailing commas (common JSON error from LLMs)
+        candidate = re.sub(r',(\s*[}\]])', r'\1', candidate)
+        
         try:
             json.loads(candidate)
             return candidate
@@ -97,7 +101,9 @@ def _extract_json_payload(raw: str) -> str:
     stripped = raw.strip()
     match = re.search(r'\{[\s\S]*\}', stripped)
     if match:
-        return match.group(0).strip()
+        candidate = match.group(0).strip()
+        candidate = re.sub(r',(\s*[}\]])', r'\1', candidate)
+        return candidate
     return stripped
 
 
