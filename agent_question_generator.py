@@ -7,6 +7,11 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, Optional
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover - optional dependency guarded at runtime
+    yaml = None
+
 from dotenv import load_dotenv
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -42,6 +47,21 @@ def _normalize_jsonish(text: str) -> str:
     # Replace full-width punctuation commonly emitted in non-English output
     text = text.replace("：", ":").replace("，", ",")
     return text
+
+
+def _attempt_yaml_repair(text: str) -> Optional[dict]:
+    """Best-effort fallback using YAML parser to tolerate trailing commas/etc."""
+    if yaml is None:
+        return None
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError:
+        return None
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list):
+        return {"assignments": data}
+    return None
 
 
 def _normalize_model_id(name: str) -> str:
@@ -412,23 +432,23 @@ JSON Schema:
         debug_path.write_text(raw_json, encoding="utf-8")
         cleaned_path = Path(output_path).with_suffix(".cleaned.json")
         cleaned_path.write_text(cleaned_json, encoding="utf-8")
-        
-        # Try one more aggressive cleanup
-        print(f"⚠️  Initial JSON parse failed, attempting aggressive cleanup...")
-        import re
-        # Try to extract just the assignments array if present
-        array_match = re.search(r'"assignments"\s*:\s*\[([\s\S]*)\]', cleaned_json)
-        if array_match:
-            try:
-                fallback = '{"assignments": [' + array_match.group(1) + ']}'
-                parsed = json.loads(fallback)
-                print(f"✅ Recovered JSON using fallback extraction")
-            except:
-                raise ValueError(
-                    "Failed to parse assignments JSON. Raw output saved to "
-                    f"{debug_path} (raw) and {cleaned_path} (cleaned)."
-                ) from exc
+
+        print("⚠️  Initial JSON parse failed, attempting YAML repair fallback...")
+        parsed = _attempt_yaml_repair(cleaned_json)
+        if parsed is not None:
+            print("✅ Recovered JSON via YAML repair fallback")
         else:
+            print("⚠️  YAML repair unavailable or unsuccessful, attempting regex extraction...")
+            array_match = re.search(r'"assignments"\s*:\s*\[([\s\S]*)\]', cleaned_json)
+            if array_match:
+                try:
+                    fallback = '{"assignments": [' + array_match.group(1) + ']}'
+                    parsed = json.loads(fallback)
+                    print("✅ Recovered JSON using fallback extraction")
+                except json.JSONDecodeError:
+                    parsed = None
+
+        if parsed is None:
             raise ValueError(
                 "Failed to parse assignments JSON. Raw output saved to "
                 f"{debug_path} (raw) and {cleaned_path} (cleaned)."
