@@ -291,7 +291,14 @@ def _render_datasets(datasets: List[Dict[str, Any]], html_dir: Path) -> str:
         return "<li>제공된 데이터셋이 없습니다.</li>"
     rows: List[str] = []
     for dataset in datasets:
-        href = _resolve_href(dataset.get("download_href") or dataset.get("path"), html_dir)
+        # Path handling for downloads
+        raw_path = dataset.get("path")
+        href = _resolve_href(dataset.get("download_href") or raw_path, html_dir)
+        
+        # If resolved href is null but raw path exists locally, force relative link
+        if not href and raw_path and os.path.exists(raw_path):
+             href = os.path.relpath(raw_path, html_dir).replace(os.sep, "/")
+
         name = escape(dataset.get("name") or dataset.get("filename") or "Dataset")
         desc = escape(dataset.get("description") or "")
         meta_parts: List[str] = []
@@ -300,7 +307,9 @@ def _render_datasets(datasets: List[Dict[str, Any]], html_dir: Path) -> str:
         if dataset.get("records"):
             meta_parts.append(f"{dataset['records']} rows")
         if dataset.get("filename"):
-            meta_parts.append(dataset["filename"])
+            # Avoid redundant filename
+            if dataset["filename"] != name:
+                 meta_parts.append(dataset["filename"])
         meta = " · ".join(meta_parts)
         link = f"<a class='resource-link' href='{href}' download>{name}</a>" if href else f"<span class='resource-link is-disabled'>{name}</span>"
         info = f"<span class='resource-meta'>{escape(meta)}</span>" if meta else ""
@@ -311,7 +320,15 @@ def _render_datasets(datasets: List[Dict[str, Any]], html_dir: Path) -> str:
 def _render_starter(starter: Dict[str, Any], html_dir: Path, ui: Dict[str, str]) -> str:
     if not starter:
         return f"<p class='dim'>{ui['starter_missing']}</p>"
-    href = _resolve_href(starter.get("download_href") or starter.get("path"), html_dir)
+    
+    # Path handling for starter code
+    raw_path = starter.get("path")
+    href = _resolve_href(starter.get("download_href") or raw_path, html_dir)
+    
+    # Fallback: force relative link if file exists but _resolve_href failed
+    if not href and raw_path and os.path.exists(raw_path):
+         href = os.path.relpath(raw_path, html_dir).replace(os.sep, "/")
+
     filename = escape(starter.get("filename") or "starter_code")
     description = escape(starter.get("description") or ui["starter_default_desc"])
     language = starter.get("language")
