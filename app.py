@@ -392,10 +392,12 @@ def run_generation(job_id, job_role, job_level, language, model=None):
                 "progress": "Generation complete (assets created, portal pending)",
                 "output_dir": str(job_dir),
                 "completed_at": datetime.now().isoformat(),
+                # Fallback to directory listing if index.html is missing
+                "index_url": f"/output/{job_dir.name}/",
                 "portal_ready": False,
                 "active_agent": None
             })
-            print(f"⚠️  Portal not found at: {portal_path}")
+            print(f"⚠️  Portal not found at: {portal_path}, falling back to directory listing.")
         
     except Exception as e:
         import traceback
