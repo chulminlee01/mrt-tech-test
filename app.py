@@ -717,10 +717,38 @@ def output_files(path):
         abort(404)
 
     if requested.is_dir():
-        requested = requested / "index.html"
-        print(f"   Directory requested, trying index: {requested}", flush=True)
+        index_obj = requested / "index.html"
+        if index_obj.exists():
+            print(f"   Serving index: {index_obj}", flush=True)
+            return send_file(index_obj)
+        
+        # Directory exists but no index.html -> Show file listing
+        print(f"   Index missing, serving directory listing for: {requested}", flush=True)
+        files = sorted([f.name for f in requested.iterdir() if not f.name.startswith('.')])
+        listing_html = f"""
+        <html>
+        <head><title>Asset Listing</title><style>body{{font-family:sans-serif;padding:2rem;line-height:1.5}} a{{color:#2563eb;text-decoration:none}} a:hover{{text-decoration:underline}} ul{{list-style:none;padding:0}} li{{padding:0.5rem 0;border-bottom:1px solid #eee}}</style></head>
+        <body>
+            <h2>📂 Generated Assets</h2>
+            <p>Directory: {path}</p>
+            <ul>
+        """
+        for f in files:
+            listing_html += f'<li>📄 <a href="{f}">{f}</a></li>'
+        listing_html += "</ul></body></html>"
+        return listing_html
 
     if not requested.exists():
+        # If user requested index.html explicitly but it's missing, try to show parent dir listing
+        if requested.name == "index.html" and requested.parent.exists() and requested.parent.is_dir():
+             print(f"   Explicit index.html missing, falling back to directory listing of {requested.parent}", flush=True)
+             # Recursive call to serve directory
+             # But simpler to just redirect or inline the logic. 
+             # Let's just reuse the listing logic by adjusting 'requested'? 
+             # No, 'path' arg needs to be adjusted for links to work.
+             # Let's just redirect to the directory (remove index.html)
+             return redirect(url_for('output_files', path=str(Path(path).parent) + "/"))
+
         # Helpful log for debugging missing files on hosting platforms
         print(f"⚠️  Requested output file not found: {requested}", flush=True)
         abort(404)
