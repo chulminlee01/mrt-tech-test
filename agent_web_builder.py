@@ -657,10 +657,19 @@ def run_web_builder(
     temperature: Optional[float] = None,
     starter_dir: Optional[str] = None,
 ) -> Path:
+    """Generate the candidate portal HTML from assignments JSON."""
     load_dotenv()
-    assignments = _load_assignments(Path(assignments_path))
+    
+    try:
+        assignments = _load_assignments(Path(assignments_path))
+    except Exception as e:
+        print(f"❌ Failed to load assignments JSON: {e}")
+        raise
+    
     _ = _read_text(research_summary_path)  # placeholder
     assignments_list = assignments.get("assignments", [])
+    
+    # Clean up any timeline metadata
     for item in assignments_list:
         item.pop("timeline", None)
 
@@ -682,10 +691,25 @@ def run_web_builder(
             ],
         ),
     }
+    
     html_path = Path(output_html)
-    html = _build_html(context, html_path)
-    html_path.write_text(html, encoding="utf-8")
-    print(f"--- Web page generated at {html_path} ---")
+    html_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        html = _build_html(context, html_path)
+    except Exception as e:
+        print(f"❌ Failed to build HTML: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+    
+    try:
+        html_path.write_text(html, encoding="utf-8")
+        print(f"✅ Web page generated at {html_path}")
+    except Exception as e:
+        print(f"❌ Failed to write HTML file: {e}")
+        raise
+    
     return html_path
 
 def _parse_args() -> argparse.Namespace:
