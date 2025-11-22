@@ -26,12 +26,20 @@ LANGUAGE_EXTENSION = {
     "ruby": "rb",
 }
 
+import unicodedata
 
-_ALLOWED_TEXT_PATTERN = re.compile(r"[\u0009\u000A\u000D\u0020-\u007E\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uAC00-\uD7FF]")
-
+def _is_allowed_char(ch: str) -> bool:
+    if ch in ("\n", "\r", "\t"):
+        return True
+    category = unicodedata.category(ch)
+    # Allow all printable characters (L=Letter, N=Number, P=Punctuation, S=Symbol)
+    # Exclude only Control (C), Separator (Z) except space
+    if category.startswith("C"):
+        return False
+    return True
 
 def _sanitize_text(value: str) -> str:
-    return "".join(match.group(0) for match in _ALLOWED_TEXT_PATTERN.finditer(value))
+    return "".join(ch for ch in value if _is_allowed_char(ch))
 
 
 def _normalize_model_id(name: Optional[str]) -> Optional[str]:

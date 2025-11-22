@@ -701,14 +701,24 @@ def get_logs(job_id):
 def output_files(path):
     """Serve generated output files with directory safeguards."""
     root = Path("output").resolve()
-    requested = (root / path).resolve()
+    try:
+        requested = (root / path).resolve()
+    except Exception as e:
+        print(f"⚠️  Path resolution error for '{path}': {e}", flush=True)
+        abort(404)
+
+    print(f"🔍 Serving file request: path='{path}'", flush=True)
+    print(f"   Root: {root}", flush=True)
+    print(f"   Requested: {requested}", flush=True)
 
     # Prevent directory traversal
     if not str(requested).startswith(str(root)):
+        print(f"⛔ Access denied: {requested} is outside {root}", flush=True)
         abort(404)
 
     if requested.is_dir():
         requested = requested / "index.html"
+        print(f"   Directory requested, trying index: {requested}", flush=True)
 
     if not requested.exists():
         # Helpful log for debugging missing files on hosting platforms
