@@ -9,6 +9,7 @@ Tries providers in order:
 
 import os
 from typing import Dict, Optional, Any, Callable, List, Tuple
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_openai import ChatOpenAI
 
 
@@ -28,10 +29,11 @@ def _is_auth_error(exc: Exception) -> bool:
     return False
 
 
-class ResilientLLM:
+class ResilientLLM(Runnable):
     """Proxy that retries with fallback providers when auth errors occur."""
 
     def __init__(self, providers: List[Tuple[Callable[[], Tuple[ChatOpenAI, str]], str]]):
+        super().__init__()
         if not providers:
             raise LLMClientError("No providers available for resilient LLM.")
         self.providers = providers
@@ -56,13 +58,13 @@ class ResilientLLM:
                 print(f"⚠️ [LLM] Provider '{label}' failed during init: {exc}", flush=True)
         raise LLMClientError(f"Unable to initialize any LLM providers. Last error: {last_error}")
 
-    def invoke(self, *args, **kwargs):
+    def invoke(self, input: Any, config: Optional[RunnableConfig] = None, **kwargs: Any) -> Any:
         max_attempts = len(self.providers)
         attempts = 0
         while attempts < max_attempts:
             attempts += 1
             try:
-                return self.client.invoke(*args, **kwargs)
+                return self.client.invoke(input, config=config, **kwargs)
             except Exception as exc:
                 if _is_auth_error(exc):
                     print(f"⚠️ [LLM] Auth error with {self.provider_label}: {exc}", flush=True)
