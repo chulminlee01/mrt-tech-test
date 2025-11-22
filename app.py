@@ -22,6 +22,7 @@ logging.raiseExceptions = False
 from crewai_working import generate_with_crewai
 from agent_starter_code import run_starter_code_generator
 from agent_web_designer import run_web_designer
+from agent_web_builder import run_web_builder
 
 app = Flask(__name__)
 
