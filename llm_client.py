@@ -375,54 +375,132 @@ def _create_with_explicit_model(model: str, temperature: float, **kwargs: Any) -
     """Create client when user explicitly provides a model name."""
     print(f"✨ Using explicit model: {model}")
     
-    # Detect provider from model name
-    if "minimax" in model.lower():
-        # Use NVIDIA
-        base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-        api_key = os.getenv("NVIDIA_API_KEY")
-        headers = _get_nvidia_headers()
-    elif "gpt" in model.lower() or "o1" in model.lower():
-        # Use OpenAI
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise LLMClientError(f"OPENAI_API_KEY required for model: {model}")
-        return ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            **kwargs
-        )
-    elif "deepseek" in model.lower():
-        # Use OpenRouter with thinking
-        base_url = os.getenv("FALLBACK_BASE_URL", "https://openrouter.ai/api/v1")
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        headers = _get_openrouter_headers()
+    # Wrapper to build the requested model client
+    def build_requested():
+        # Detect provider from model name
+        if "minimax" in model.lower():
+            # Use NVIDIA
+            base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+            api_key = os.getenv("NVIDIA_API_KEY")
+            headers = _get_nvidia_headers()
+            
+            if not api_key:
+                raise LLMClientError("NVIDIA_API_KEY not found for Minimax model")
+                
+            return ChatOpenAI(
+                model=model,
+                temperature=temperature,
+                base_url=base_url,
+                api_key=api_key,
+                **kwargs
+            ), f"NVIDIA · {model}"
+            
+        elif "gpt" in model.lower() or "o1" in model.lower():
+            # Use OpenAI
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise LLMClientError(f"OPENAI_API_KEY required for model: {model}")
+            return ChatOpenAI(
+                model=model,
+                temperature=temperature,
+                api_key=api_key,
+                **kwargs
+            ), f"OpenAI · {model}"
+            
+        elif "deepseek" in model.lower():
+            # Can be NVIDIA or OpenRouter depending on the variant
+            if "terminus" in model.lower() or "deepseek-r1" in model.lower():
+                 # Prefer NVIDIA for Terminus/R1 if key available
+                 nvidia_key = os.getenv("NVIDIA_API_KEY")
+                 if nvidia_key:
+                     # Configure extra_body for DeepSeek thinking
+                     model_kwargs = kwargs.pop("model_kwargs", {})
+                     model_kwargs["extra_body"] = {
+                         "chat_template_kwargs": {"thinking": True}
+                     }
+                     return ChatOpenAI(
+                        model=model,
+                        temperature=temperature,
+                        base_url=os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                        api_key=nvidia_key,
+                        model_kwargs=model_kwargs,
+                        **kwargs
+                     ), f"NVIDIA · {model}"
+
+            # Fallback to OpenRouter for generic DeepSeek
+            base_url = os.getenv("FALLBACK_BASE_URL", "https://openrouter.ai/api/v1")
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            headers = _get_openrouter_headers()
+            
+            if not api_key:
+                 raise LLMClientError(f"OPENROUTER_API_KEY required for model: {model}")
+
+            # Add thinking if it's DeepSeek
+            thinking_enabled = os.getenv("DEEPSEEK_THINKING", "True").lower() == "true"
+            if thinking_enabled:
+                model_kwargs = kwargs.pop("model_kwargs", {})
+                model_kwargs["extra_body"] = {
+                    "chat_template_kwargs": {"thinking": True}
+                }
+                kwargs["model_kwargs"] = model_kwargs
+            
+            return ChatOpenAI(
+                model=model,
+                temperature=temperature,
+                base_url=base_url,
+                api_key=api_key,
+                default_headers=headers,
+                **kwargs
+            ), f"OpenRouter · {model}"
+            
+        else:
+            # Use OpenRouter for everything else (Grok, Llama on OR, etc)
+            base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            headers = _get_openrouter_headers()
         
-        # Add thinking if it's DeepSeek
-        thinking_enabled = os.getenv("DEEPSEEK_THINKING", "True").lower() == "true"
-        if thinking_enabled:
-            model_kwargs = kwargs.pop("model_kwargs", {})
-            model_kwargs["extra_body"] = {
-                "chat_template_kwargs": {"thinking": True}
-            }
-            kwargs["model_kwargs"] = model_kwargs
-    else:
-        # Use OpenRouter for everything else
-        base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        headers = _get_openrouter_headers()
+            if not api_key:
+                raise LLMClientError(f"No API key found for model: {model}")
+        
+            return ChatOpenAI(
+                model=model,
+                temperature=temperature,
+                base_url=base_url,
+                api_key=api_key,
+                default_headers=headers if headers else None,
+                **kwargs
+            ), f"OpenRouter · {model}"
+
+    # Define fallback providers (standard NVIDIA fallback chain)
+    # This ensures if the specific requested model fails (e.g. Grok 401), we fallback to a safe model
+    fallback_candidates = [
+        os.getenv("NVIDIA_FALLBACK_MODEL", "qwen/qwen3-next-80b-a3b-instruct"),
+        "meta/llama-3.1-8b-instruct",
+    ]
     
-    if not api_key:
-        raise LLMClientError(f"No API key found for model: {model}")
-    
-    return ChatOpenAI(
-        model=model,
-        temperature=temperature,
-        base_url=base_url,
-        api_key=api_key,
-        default_headers=headers if headers else None,
-        **kwargs
-    )
+    def _factory(model_name: str):
+        def build():
+            nvidia_key = os.getenv("NVIDIA_API_KEY")
+            nvidia_base = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+            if not nvidia_key:
+                 raise LLMClientError("NVIDIA_API_KEY not found for fallback")
+            return ChatOpenAI(
+                model=model_name,
+                temperature=temperature,
+                base_url=nvidia_base,
+                api_key=nvidia_key,
+                request_timeout=120,
+                max_retries=3,
+            ), f"NVIDIA · {model_name}"
+        return build
+
+    # Construct provider list: Requested Model -> Fallback 1 -> Fallback 2
+    providers = [(build_requested, model)]
+    for cand in fallback_candidates:
+        if cand and cand != model:
+            providers.append((_factory(cand), cand))
+            
+    return ResilientLLM(providers)
 
 
 # Backward compatibility function
