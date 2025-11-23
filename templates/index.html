@@ -1761,11 +1761,14 @@
       
       console.log('🚀 Form submitted');
       
+      // Get selected language from radio buttons
+      const language = document.querySelector('input[name="language"]:checked')?.value || 'Korean';
+      
       const formData = {
         job_role: document.getElementById('jobRole').value,
         job_level: document.getElementById('jobLevel').value,
-        language: document.getElementById('language').value,
-        model: document.getElementById('llmModel').value
+        language: language,
+        // Remove model from payload, backend will use default
       };
       
       console.log('📋 Form data:', formData);
