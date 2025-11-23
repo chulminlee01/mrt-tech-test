@@ -1988,10 +1988,10 @@
       document.getElementById('statusCard').classList.add('visible');
       document.querySelector('.form-card').style.display = 'none';
       
-      // Hide recent jobs section during generation
+      // Ensure recent jobs section stays visible
       const jobsSection = document.getElementById('jobsSection');
       if (jobsSection) {
-        jobsSection.style.display = 'none';
+        jobsSection.style.display = 'block';
       }
       
       // Initialize agent cards
@@ -2301,14 +2301,14 @@
               : '';
             
             return `
-              <div class="job-card">
-                <div class="job-card__header">
+            <div class="job-card">
+              <div class="job-card__header">
                   <div class="job-card__title">${timestamp}</div>
                   ${statusBadge}
-                </div>
+              </div>
                 <div class="job-card__info">${job.progress || 'No details available'}</div>
                 ${viewLink}
-              </div>
+            </div>
             `;
           }).join('');
           
