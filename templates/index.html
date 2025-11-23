@@ -1448,7 +1448,10 @@
     <div class="hero">
       <h1 class="hero__title">AI-Powered Tech Test Generator</h1>
       <p class="hero__subtitle">Create comprehensive coding assignments in minutes</p>
-      <span class="hero__badge">🤖 Powered by NVIDIA DeepSeek & CrewAI</span>
+      <span class="hero__badge">
+        <img src="https://avatars.githubusercontent.com/u/152399662?s=200&v=4" alt="CrewAI Logo" style="height: 16px; width: 16px; vertical-align: middle; margin-right: 4px;">
+        Powered by CrewAI
+      </span>
     </div>
 
     <!-- Form Card -->
@@ -1517,29 +1520,6 @@
             height: 1.2em;
           }
         </style>
-
-        {% set _default_model = default_model or 'x-ai/grok-4.1-fast' %}
-        {% set _model_options = [
-          ('x-ai/grok-4.1-fast', 'OpenRouter · Grok 4.1 Fast (recommended)'),
-          ('qwen/qwen3-next-80b-a3b-instruct', 'NVIDIA · Qwen 3 Next 80B'),
-          ('deepseek-ai/deepseek-v3.1-terminus', 'NVIDIA · DeepSeek v3.1 Terminus'),
-          ('meta/llama-3.1-8b-instruct', 'NVIDIA · Llama 3.1 8B')
-        ] %}
-        <div class="form-group">
-          <label for="llmModel">LLM Model *</label>
-          <select id="llmModel" name="model" required>
-            {% for value, label in _model_options %}
-              <option value="{{ value }}" {% if value == _default_model %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-            {% if available_models %}
-              {% for value in available_models %}
-                {% if value %}
-                  <option value="{{ value }}" {% if value == _default_model %}selected{% endif %}>{{ value }}</option>
-                {% endif %}
-              {% endfor %}
-            {% endif %}
-          </select>
-        </div>
 
         <button type="submit" class="btn" id="generateBtn">
           <span id="btnText">🚀 Generate Tech Test</span>

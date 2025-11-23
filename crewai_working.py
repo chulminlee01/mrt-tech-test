@@ -391,24 +391,26 @@ def _run_simple_pipeline(
     research_path = output_dir / "research_report.txt"
     research_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Models: Use fast model for assignment generation, thinking model for planning/reasoning
+    # Models: 
+    # - Primary (General/Fast): x-ai/grok-4.1-fast (OpenRouter)
+    # - Assignment Generator (Deep Thinking): deepseek-ai/deepseek-v3.1-terminus (NVIDIA)
+    
     fast_model_name = "x-ai/grok-4.1-fast"
-    thinking_model_name = "deepseek-ai/deepseek-v3.1-terminus"
+    deep_thinking_model_name = "deepseek-ai/deepseek-v3.1-terminus"
     
-    # Determine primary model (reasoning)
-    # If user provided a model, use it. Otherwise default to Thinking Model.
-    primary_model = model if model else thinking_model_name
+    # 1. Default / Primary Model (Research, PM, etc.) -> Grok 4.1 Fast
+    primary_model = fast_model_name
     
-    # Determine generation model (long task)
-    # User requested Grok for long task explicitly.
-    # Fallback to primary if OPENROUTER_API_KEY missing.
-    if os.getenv("OPENROUTER_API_KEY"):
-        gen_model = fast_model_name
-        _log(f"⚡ [System] Selected high-speed model ({gen_model}) for heavy generation task.")
+    # 2. Assignment Generation Model -> DeepSeek V3.1 Terminus
+    # (But check if NVIDIA key is present, otherwise fallback to primary)
+    if os.getenv("NVIDIA_API_KEY"):
+        gen_model = deep_thinking_model_name
+        _log(f"⚡ [System] Selected deep thinking model ({gen_model}) for assignment generation.")
     else:
         gen_model = primary_model
-        _log(f"⚠️ [System] OPENROUTER_API_KEY not found. Using primary model ({gen_model}) for generation.")
+        _log(f"⚠️ [System] NVIDIA_API_KEY not found. Using primary model ({gen_model}) for generation.")
 
+    # Create the primary LLM client
     llm_primary = create_nvidia_llm_direct(temperature=0.4, model=primary_model)
     
     kickoff = (
