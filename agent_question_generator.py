@@ -327,7 +327,7 @@ def run_question_generator(
 
     # Build language-specific system and user prompts
     if language.lower() in ["korean", "한국어"]:
-        system_msg = """당신은 OTA 산업 전문 채용 디렉터입니다. 모든 결과는 JSON 형식으로 반환하며, 한국어와 영문 기술 용어만 사용하고 한자·중국어 문자를 절대 포함하지 않습니다."""
+        system_msg = """당신은 OTA 산업 전문 채용 디렉터입니다. 모든 결과는 JSON 형식으로 반환하며, 반드시 한국어(Korean)로 작성하세요. 영문 기술 용어(API, Swift, Compose 등)는 그대로 사용해도 되지만, 설명과 문장은 한국어여야 합니다."""
         user_msg = """회사명: {company_name}
 직무: {job_level} {job_role}
 언어: {language}
@@ -340,7 +340,7 @@ def run_question_generator(
 - 과제에는 최소 1개의 맞춤형 데이터셋(`datasets`)과 스타터 코드 메타데이터(`starter_code`)를 포함시키고, 내용이 과제 요구사항과 긴밀히 연결되도록 하세요.
 - 데이터셋의 `description`과 `columns`는 과제에서 다루는 문제를 해결하는 데 필요한 정보를 전달해야 하며, `records` 값은 10~2000 범위에서 현실적인 크기를 설정하세요.
 - `starter_code`에는 후보자가 바로 활용할 수 있도록 언어(`language`), 파일명(`filename`), 제공 목적을 명확히 설명하고 과제 맥락과 연결하세요.
-- 모든 설명은 간결하면서도 실무 지침이 되도록 작성하며, 기술 용어(예: API, Swift, Compose)는 영어를 유지할 수 있으나 그 외에는 한글을 사용하세요.
+- 모든 설명, 미션, 요구사항은 반드시 한국어로 작성하세요. (기술 용어 제외)
 
 JSON Schema:
 {schema_description}
